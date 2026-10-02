@@ -1,0 +1,13 @@
+## Interface: 11200
+## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
+## Notes: v0.1.0: peer-synced pins across world, continent, zone, and dungeon maps
+## Author: MawAddons
+## Version: 0.1.0
+## SavedVariables: HCMapperDB
+
+Core.lua
+MapData.lua
+Network.lua
+UI.lua
+WorldMap.lua
+Dungeon.lua
