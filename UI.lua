@@ -90,35 +90,217 @@ end
 
 function HCM:CreateManager()
     if self.Manager then return self.Manager end
-    local frame = Panel("HCMapperManager", 475, 465)
-    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 30)
-    frame.title = Text(frame, "HC Mapper", "GameFontNormalLarge"); frame.title:SetPoint("TOP", frame, "TOP", 0, -18)
-    frame.version = Text(frame, "v" .. self.VERSION, "GameFontDisableSmall"); frame.version:SetPoint("TOPLEFT", frame, "TOPLEFT", 20, -20)
-    frame.close = Button(frame, "X", 26, 24); frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, -11); frame.close:SetScript("OnClick", function() frame:Hide() end)
-    frame.status = Text(frame, "", "GameFontHighlightSmall"); frame.status:SetPoint("TOPLEFT", frame, "TOPLEFT", 23, -55)
-    frame.world = Button(frame, "World Map", 125, 28); frame.world:SetPoint("TOPLEFT", frame, "TOPLEFT", 23, -79)
-    frame.world:SetScript("OnClick", function() if ToggleWorldMap then ToggleWorldMap() end end)
-    frame.dungeons = Button(frame, "Dungeon Maps", 125, 28); frame.dungeons:SetPoint("LEFT", frame.world, "RIGHT", 12, 0)
-    frame.dungeons:SetScript("OnClick", function() HCM:OpenDungeonBrowser() end)
-    frame.sync = Button(frame, "Request Sync", 125, 28); frame.sync:SetPoint("LEFT", frame.dungeons, "RIGHT", 12, 0)
-    frame.sync:SetScript("OnClick", function() HCM:RequestSync() end)
+    local frame = Panel("HCMapperManager", 1000, 650)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 20)
+    frame:SetScript("OnDragStart", nil); frame:SetScript("OnDragStop", nil)
+    frame.titlebar = CreateFrame("Button", nil, frame)
+    frame.titlebar:SetPoint("TOPLEFT", frame, "TOPLEFT", 14, -10); frame.titlebar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -76, -10); frame.titlebar:SetHeight(34)
+    frame.titlebar:RegisterForDrag("LeftButton")
+    frame.titlebar:SetScript("OnDragStart", function() frame:StartMoving() end)
+    frame.titlebar:SetScript("OnDragStop", function() frame:StopMovingOrSizing() end)
+    frame.title = Text(frame.titlebar, "HC Mapper", "GameFontNormalLarge"); frame.title:SetPoint("CENTER", frame.titlebar, "CENTER", 25, 0)
+    frame.version = Text(frame, "v" .. self.VERSION, "GameFontDisableSmall"); frame.version:SetPoint("TOPLEFT", frame, "TOPLEFT", 24, -21)
+    frame.close = Button(frame, "X", 28, 26); frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -14, -13); frame.close:SetScript("OnClick", function() frame:Hide() end)
+    frame.minimize = Button(frame, "-", 28, 26); frame.minimize:SetPoint("RIGHT", frame.close, "LEFT", -4, 0)
+    frame.content = CreateFrame("Frame", nil, frame); frame.content:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -48); frame.content:SetWidth(1000); frame.content:SetHeight(592)
+    frame.minimize:SetScript("OnClick", function()
+        if frame.minimized then frame.minimized=nil; frame:SetHeight(650); frame.content:Show(); frame.minimize:SetText("-")
+        else frame.minimized=1; frame.content:Hide(); frame:SetHeight(56); frame.minimize:SetText("+") end
+    end)
+
+    frame.tabs = {}; local tabNames={"World","Continent","Zone","Dungeon"}; local i
+    for i=1,4 do
+        local tab=Button(frame.content,tabNames[i],135,30);tab:SetPoint("TOPLEFT",frame.content,"TOPLEFT",20+(i-1)*143,-2);tab.mode=tabNames[i]
+        tab:SetScript("OnClick",function()HCM:SetDashboardMode(this.mode)end);frame.tabs[i]=tab
+    end
+    frame.search=Edit(frame.content,250,30);frame.search:SetPoint("TOPRIGHT",frame.content,"TOPRIGHT",-58,-2)
+    frame.search:SetScript("OnTextChanged",function()HCM:RefreshManager()end)
+    frame.searchHint=Text(frame.content,"Search pins...","GameFontDisableSmall");frame.searchHint:SetPoint("LEFT",frame.search,"LEFT",9,0)
+    frame.search:SetScript("OnEditFocusGained",function()frame.searchHint:Hide()end)
+    frame.search:SetScript("OnEditFocusLost",function()if frame.search:GetText()==""then frame.searchHint:Show()end end)
+    frame.sync=Button(frame.content,"",48,30);frame.sync:SetPoint("LEFT",frame.search,"RIGHT",5,0);frame.sync:SetScript("OnClick",function()HCM:RequestSync()end)
+    frame.syncIcon=frame.sync:CreateTexture(nil,"ARTWORK");frame.syncIcon:SetTexture("Interface\\Icons\\INV_Gizmo_02");frame.syncIcon:SetWidth(22);frame.syncIcon:SetHeight(22);frame.syncIcon:SetPoint("CENTER",frame.sync,"CENTER",0,0)
+    frame.sync:SetScript("OnEnter",function()GameTooltip:SetOwner(this,"ANCHOR_LEFT");GameTooltip:AddLine("HC Mapper options");GameTooltip:AddLine("Click to request peer sync",1,1,1);GameTooltip:Show()end);frame.sync:SetScript("OnLeave",function()GameTooltip:Hide()end)
+
+    frame.breadcrumb=Text(frame.content,"","GameFontNormal");frame.breadcrumb:SetPoint("TOPLEFT",frame.content,"TOPLEFT",26,-43)
+    frame.nextDungeon=Button(frame.content,"Next Dungeon >",120,23);frame.nextDungeon:SetPoint("TOPRIGHT",frame.content,"TOPRIGHT",-302,-38);frame.nextDungeon:Hide()
+    frame.nextDungeon:SetScript("OnClick",function()
+        local index=1;local n;for n=1,table.getn(HCM.DungeonMaps or{})do if HCM.DungeonMaps[n][1]==frame.dungeonKey then index=n+1 end end
+        if index>table.getn(HCM.DungeonMaps or{})then index=1 end
+        if HCM.DungeonMaps and HCM.DungeonMaps[index]then frame.dungeonKey=HCM.DungeonMaps[index][1];HCM:RefreshDashboardMap()end
+    end)
+    frame.map=CreateFrame("Button",nil,frame.content);frame.map:SetWidth(680);frame.map:SetHeight(486);frame.map:SetPoint("TOPLEFT",frame.content,"TOPLEFT",18,-66);frame.map:RegisterForClicks("LeftButtonUp")
+    frame.map:SetBackdrop({bgFile="Interface\\Tooltips\\UI-Tooltip-Background",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",tile=true,tileSize=16,edgeSize=12,insets={left=3,right=3,top=3,bottom=3}})
+    frame.map:SetBackdropColor(.01,.01,.01,1)
+    frame.tiles={}
+    for i=1,12 do
+        local tile=frame.map:CreateTexture(nil,"BACKGROUND");tile:SetWidth(170);tile:SetHeight(162)
+        local col=(i-1)%4;local row=math.floor((i-1)/4);tile:SetPoint("TOPLEFT",frame.map,"TOPLEFT",col*170,-row*162);frame.tiles[i]=tile
+    end
+    frame.dungeonTexture=frame.map:CreateTexture(nil,"BACKGROUND");frame.dungeonTexture:SetAllPoints(frame.map);frame.dungeonTexture:Hide()
+    frame.map:SetScript("OnClick",function()
+        if not frame.addMode then return end
+        local x,y=HCM:CursorPosition(frame.map);frame.addMode=nil;frame.newPin:SetText("+ New Pin")
+        if not x or not y then return end
+        if frame.mode=="Dungeon" then HCM:OpenPinEditor({continent=0,zone="",x=0,y=0,instance=frame.dungeonKey,ix=x,iy=y})
+        elseif frame.mode=="Zone" then HCM:OpenPinEditor({continent=frame.contextContinent,zone=frame.contextZone,x=x,y=y,instance=""})
+        else HCM:Print("zoom to Zone before creating an outdoor pin") end
+    end)
+    frame.mapPins={};for i=1,120 do frame.mapPins[i]=self:CreateMapPin(frame.map);frame.mapPins[i].mapKind="dashboard";frame.mapPins[i]:SetFrameLevel(frame.map:GetFrameLevel()+4);frame.mapPins[i]:Hide()end
+
+    frame.side=CreateFrame("Frame",nil,frame.content);frame.side:SetWidth(278);frame.side:SetHeight(486);frame.side:SetPoint("TOPRIGHT",frame.content,"TOPRIGHT",-18,-66)
+    frame.side:SetBackdrop({bgFile="Interface\\Tooltips\\UI-Tooltip-Background",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",tile=true,tileSize=16,edgeSize=12,insets={left=4,right=4,top=4,bottom=4}});frame.side:SetBackdropColor(.025,.02,.01,.96)
+    frame.sideTitle=Text(frame.side,"Pin Manager","GameFontNormalLarge");frame.sideTitle:SetPoint("TOPLEFT",frame.side,"TOPLEFT",16,-14)
+    frame.categoryIndex=1;frame.categoryValues={"All categories","Danger","Treasure","Vendor","Profession","Resource","Travel","Note"}
+    frame.category=Button(frame.side,"All categories",246,26);frame.category:SetPoint("TOPLEFT",frame.side,"TOPLEFT",16,-43)
+    frame.category:SetScript("OnClick",function()frame.categoryIndex=frame.categoryIndex+1;if frame.categoryIndex>table.getn(frame.categoryValues)then frame.categoryIndex=1 end;frame.category:SetText(frame.categoryValues[frame.categoryIndex]);HCM:RefreshManager()end)
+    frame.scopeIndex=1;frame.scopeValues={"All pins","My pins","Peer pins","Guild pins"}
+    frame.scope=Button(frame.side,"All pins",246,26);frame.scope:SetPoint("TOPLEFT",frame.side,"TOPLEFT",16,-73)
+    frame.scope:SetScript("OnClick",function()frame.scopeIndex=frame.scopeIndex+1;if frame.scopeIndex>table.getn(frame.scopeValues)then frame.scopeIndex=1 end;frame.scope:SetText(frame.scopeValues[frame.scopeIndex]);HCM:RefreshManager()end)
     frame.rows = {}
-    local i
-    for i = 1, 10 do
-        local row = CreateFrame("Button", nil, frame)
-        row:SetWidth(425); row:SetHeight(29); row:SetPoint("TOPLEFT", frame, "TOPLEFT", 24, -125 - (i-1)*30)
+    for i = 1, 6 do
+        local row = CreateFrame("Button", nil, frame.side)
+        row:SetWidth(246); row:SetHeight(37); row:SetPoint("TOPLEFT", frame.side, "TOPLEFT", 16, -108 - (i-1)*39)
         row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
-        row.icon = row:CreateTexture(nil, "ARTWORK"); row.icon:SetWidth(22); row.icon:SetHeight(22); row.icon:SetPoint("LEFT", row, "LEFT", 2, 0)
-        row.label = Text(row, "", "GameFontHighlightSmall"); row.label:SetPoint("LEFT", row.icon, "RIGHT", 8, 0); row.label:SetWidth(365); row.label:SetJustifyH("LEFT")
+        row.icon = row:CreateTexture(nil, "ARTWORK"); row.icon:SetWidth(30); row.icon:SetHeight(30); row.icon:SetPoint("LEFT", row, "LEFT", 2, 0)
+        row.label = Text(row, "", "GameFontHighlightSmall"); row.label:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 7, -2); row.label:SetWidth(200); row.label:SetJustifyH("LEFT")
+        row.detail = Text(row, "", "GameFontDisableSmall"); row.detail:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 7, 2); row.detail:SetWidth(200); row.detail:SetJustifyH("LEFT")
         row:SetScript("OnEnter", function() if this.pin then HCM:ShowPinTooltip(this, this.pin) end end)
         row:SetScript("OnLeave", function() GameTooltip:Hide() end)
         row:SetScript("OnClick", function() if this.pin and IsShiftKeyDown() and arg1 == "RightButton" then HCM:DeletePin(this.pin.id, 1) end end)
         row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         frame.rows[i] = row
     end
-    frame.hint = Text(frame, "Shift-right-click your own pin to delete it.", "GameFontDisableSmall"); frame.hint:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24, 22)
+    frame.newPin=Button(frame.side,"+ New Pin",116,28);frame.newPin:SetPoint("BOTTOMLEFT",frame.side,"BOTTOMLEFT",16,78)
+    frame.newPin:SetScript("OnClick",function()frame.addMode=not frame.addMode;if frame.addMode then frame.newPin:SetText("Click map...")else frame.newPin:SetText("+ New Pin")end end)
+    frame.editPin=Button(frame.side,"Edit Pin",116,28);frame.editPin:SetPoint("LEFT",frame.newPin,"RIGHT",12,0)
+    frame.editPin:SetScript("OnClick",function()HCM:Print("click and drag one of your pins to reposition it")end)
+    frame.modeCards={}
+    for i=1,4 do
+        local card=CreateFrame("Button",nil,frame.side,"UIPanelButtonTemplate");card:SetWidth(58);card:SetHeight(56);card:SetPoint("BOTTOMLEFT",frame.side,"BOTTOMLEFT",16+(i-1)*61,14);card.mode=tabNames[i]
+        card.icon=card:CreateTexture(nil,"ARTWORK");card.icon:SetTexture("Interface\\Icons\\INV_Misc_Map_01");card.icon:SetWidth(28);card.icon:SetHeight(28);card.icon:SetPoint("TOP",card,"TOP",0,-4)
+        card.label=Text(card,tabNames[i],"GameFontDisableSmall");card.label:SetPoint("BOTTOM",card,"BOTTOM",0,5)
+        card:SetScript("OnClick",function()HCM:SetDashboardMode(this.mode)end);frame.modeCards[i]=card
+    end
+    frame.status = Text(frame.content, "", "GameFontHighlightSmall"); frame.status:SetPoint("BOTTOMLEFT", frame.content, "BOTTOMLEFT", 24, 10)
+    frame.hint = Text(frame.content, "Drag your own pin, then Save or Undo.", "GameFontDisableSmall"); frame.hint:SetPoint("BOTTOMRIGHT", frame.content, "BOTTOMRIGHT", -24, 10)
+    frame.mode="Zone";frame.dungeonKey="TheDeadmines"
     frame:Hide(); self.Manager = frame
+    self:CreateMoveBar()
     return frame
+end
+
+function HCM:CreateMoveBar()
+    if self.MoveBar or not self.Manager then return end
+    local bar=CreateFrame("Frame",nil,UIParent);bar:SetWidth(300);bar:SetHeight(44);bar:SetPoint("BOTTOM",UIParent,"BOTTOM",0,82);bar:SetFrameStrata("TOOLTIP")
+    bar:SetBackdrop({bgFile="Interface\\Tooltips\\UI-Tooltip-Background",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",tile=true,tileSize=16,edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});bar:SetBackdropColor(.02,.02,.02,.98)
+    bar.label=Text(bar,"Pin moved","GameFontHighlightSmall");bar.label:SetPoint("LEFT",bar,"LEFT",12,0)
+    bar.save=Button(bar,"Save",78,26);bar.save:SetPoint("RIGHT",bar,"RIGHT",-10,0)
+    bar.undo=Button(bar,"Undo",78,26);bar.undo:SetPoint("RIGHT",bar.save,"LEFT",-7,0)
+    bar.save:SetScript("OnClick",function()HCM:SavePendingMove()end);bar.undo:SetScript("OnClick",function()HCM:UndoPendingMove()end)
+    bar:Hide();self.MoveBar=bar
+end
+
+function HCM:SetDashboardMode(mode)
+    local frame=self:CreateManager();frame.mode=mode or"Zone";frame.addMode=nil;frame.newPin:SetText("+ New Pin")
+    self:RefreshDashboardMap()
+end
+
+function HCM:RefreshDashboardMap()
+    local frame=self.Manager;if not frame then return end
+    local mode=frame.mode or"Zone";local key;local continent,zone,zoneIndex=self:GetMapContext()
+    if mode=="World"then key="World";frame.contextContinent=0;frame.contextZone="";frame.breadcrumb:SetText("Azeroth")
+    elseif mode=="Continent"then
+        if continent<1 then continent=2 end;key=continent==1 and"Kalimdor"or"Azeroth";frame.contextContinent=continent;frame.contextZone="";frame.breadcrumb:SetText("Azeroth  >  "..(continent==1 and"Kalimdor"or"Eastern Kingdoms"))
+    elseif mode=="Dungeon"then
+        key=frame.dungeonKey or"TheDeadmines";frame.contextContinent=0;frame.contextZone="";frame.breadcrumb:SetText("Dungeon  >  "..self:DungeonName(key))
+    else
+        if continent<1 or zoneIndex<1 or zone==""then
+            if SetMapToCurrentZone then SetMapToCurrentZone();continent,zone,zoneIndex=self:GetMapContext()end
+        end
+        key=(GetMapInfo and GetMapInfo())or zone;frame.contextContinent=continent;frame.contextZone=zone;frame.breadcrumb:SetText("Azeroth  >  "..(continent==1 and"Kalimdor"or"Eastern Kingdoms").."  >  "..(zone~=""and zone or"Current zone"))
+    end
+    local i
+    if mode=="Dungeon"then
+        for i=1,12 do frame.tiles[i]:Hide()end;frame.dungeonTexture:SetTexture("Interface\\AddOns\\HC-Mapper\\Media\\Maps\\"..key);frame.dungeonTexture:Show();frame.nextDungeon:Show()
+    else
+        frame.dungeonTexture:Hide();frame.nextDungeon:Hide()
+        for i=1,12 do frame.tiles[i]:SetTexture("Interface\\WorldMap\\"..key.."\\"..key..i);frame.tiles[i]:Show()end
+    end
+    for i=1,4 do local selected=frame.tabs[i].mode==mode;frame.tabs[i]:SetText(selected and("[ "..frame.tabs[i].mode.." ]")or frame.tabs[i].mode)end
+    self:RefreshDashboardPins()
+end
+
+function HCM:RefreshDashboardPins()
+    local frame=self.Manager;if not frame or not frame:IsShown()then return end
+    local visible={};local i
+    for i=1,table.getn(self.DB.pins)do
+        local pin=self.DB.pins[i]
+        if self:VisiblePin(pin)then
+            if frame.mode=="Dungeon"and pin.instance==frame.dungeonKey then table.insert(visible,{pin=pin,x=pin.ix,y=pin.iy})
+            elseif frame.mode~="Dungeon"and pin.instance==""then
+                local x,y=self:ProjectPosition(pin.continent,pin.zone,pin.x,pin.y,frame.contextContinent,frame.contextZone)
+                if x and y and x>=0 and x<=1 and y>=0 and y<=1 then table.insert(visible,{pin=pin,x=x,y=y})end
+            end
+        end
+    end
+    for i=1,120 do
+        local button,data=frame.mapPins[i],visible[i]
+        if data then
+            local x,y=data.x,data.y
+            if self.PendingMove and self.PendingMove.pin.id==data.pin.id then
+                if frame.mode=="Dungeon"then x,y=self.PendingMove.ix,self.PendingMove.iy
+                elseif frame.mode=="Zone"then x,y=self.PendingMove.x,self.PendingMove.y end
+            end
+            button.pin=data.pin;button.icon:SetTexture(self.CategoryIcons[data.pin.category]or self.CategoryIcons.Note)
+            local color=self.CategoryColors[data.pin.category]or{1,1,1};button.ring:SetVertexColor(color[1],color[2],color[3])
+            button:ClearAllPoints();button:SetPoint("CENTER",frame.map,"TOPLEFT",x*frame.map:GetWidth(),-y*frame.map:GetHeight());button:Show()
+        else button.pin=nil;button:Hide()end
+    end
+end
+
+function HCM:PinDragMap(button)
+    if button.mapKind=="dashboard"and self.Manager then
+        if self.Manager.mode=="Dungeon"then return self.Manager.map,"dungeon"end
+        if self.Manager.mode=="Zone"then return self.Manager.map,"zone"end
+    elseif button.mapKind=="dungeon"and self.DungeonFrame then return self.DungeonFrame.map,"dungeon"
+    elseif button.mapKind=="world"then
+        local continent,zone,zoneIndex=self:GetMapContext()
+        if zoneIndex>0 and button.pin and button.pin.continent==continent and button.pin.zone==zone then return WorldMapButton,"zone"end
+    end
+    return nil
+end
+
+function HCM:BeginPinDrag(button)
+    local pin=button and button.pin;if not pin then return end
+    if self:NormalizeName(pin.owner)~=self:NormalizeName(self:PlayerName())then self:Print("only your own pins can be moved");return end
+    local map,kind=self:PinDragMap(button);if not map then self:Print("open the pin's Zone or Dungeon map to move it");return end
+    if self.PendingMove and self.PendingMove.pin.id~=pin.id then self:UndoPendingMove()end
+    self.PendingMove={pin=pin,map=map,kind=kind,x=pin.x,y=pin.y,ix=pin.ix,iy=pin.iy}
+    button.dragging=1;button.dragMap=map;button.dragKind=kind
+    if self.MoveBar then self.MoveBar.label:SetText("Moving "..pin.title);self.MoveBar:Show()end
+end
+
+function HCM:UpdatePinDrag(button)
+    if not button.dragging or not self.PendingMove then return end
+    local x,y=self:CursorPosition(button.dragMap);if not x or not y then return end
+    if button.dragKind=="dungeon"then self.PendingMove.ix,self.PendingMove.iy=x,y else self.PendingMove.x,self.PendingMove.y=x,y end
+    button:ClearAllPoints();button:SetPoint("CENTER",button.dragMap,"TOPLEFT",x*button.dragMap:GetWidth(),-y*button.dragMap:GetHeight())
+end
+
+function HCM:EndPinDrag(button)
+    if button then button.dragging=nil end
+    if self.PendingMove and self.MoveBar then self.MoveBar.label:SetText("Save new position?");self.MoveBar:Show()end
+end
+
+function HCM:SavePendingMove()
+    local move=self.PendingMove;if not move then return end
+    self.PendingMove=nil;if self.MoveBar then self.MoveBar:Hide()end
+    if move.kind=="dungeon"then self:CommitPinMove(move.pin.id,{ix=move.ix,iy=move.iy})else self:CommitPinMove(move.pin.id,{x=move.x,y=move.y})end
+end
+
+function HCM:UndoPendingMove()
+    self.PendingMove=nil;if self.MoveBar then self.MoveBar:Hide()end;self:RefreshAll();self:RefreshDashboardPins()
 end
 
 function HCM:ShowPinTooltip(anchor, pin)
@@ -133,22 +315,37 @@ end
 
 function HCM:RefreshManager()
     if not self.Manager then return end
-    self.Manager.status:SetText(self:NetworkStatus() .. "  /  " .. table.getn(self.DB.pins) .. " pin(s)")
+    local frame=self.Manager
+    frame.status:SetText("Sync: "..self:NetworkStatus() .. "  -  " .. table.getn(self.DB.pins) .. " pins")
     local visible = {}; local i
-    for i = table.getn(self.DB.pins), 1, -1 do if self:VisiblePin(self.DB.pins[i]) then table.insert(visible, self.DB.pins[i]) end end
-    for i = 1, 10 do
-        local row, pin = self.Manager.rows[i], visible[i]
+    local query=string.lower(self:Trim(frame.search:GetText(),40));query=string.gsub(query,"(%W)","%%%1")
+    local category=frame.categoryValues[frame.categoryIndex];local scope=frame.scopeValues[frame.scopeIndex]
+    for i = table.getn(self.DB.pins), 1, -1 do
+        local pin=self.DB.pins[i];local mine=self:NormalizeName(pin.owner)==self:NormalizeName(self:PlayerName())
+        local categoryOK=category=="All categories"or pin.category==category
+        local scopeOK=scope=="All pins"or(scope=="My pins"and mine)or(scope=="Guild pins"and not mine and pin.scope=="Guild")or(scope=="Peer pins"and not mine and pin.scope~="Guild")
+        local haystack=string.lower((pin.title or"").." "..(pin.note or"").." "..(pin.owner or"").." "..(pin.zone or"").." "..(pin.instance or""))
+        if self:VisiblePin(pin)and categoryOK and scopeOK and(query==""or string.find(haystack,query))then table.insert(visible,pin)end
+    end
+    for i = 1, 6 do
+        local row, pin = frame.rows[i], visible[i]
         if pin then
             row.pin = pin; row.icon:SetTexture(self.CategoryIcons[pin.category] or self.CategoryIcons.Note)
             local place = pin.instance ~= "" and pin.instance or pin.zone
-            row.label:SetText(pin.title .. "  |cff888888" .. place .. " - " .. pin.owner .. "|r"); row:Show()
+            local color=self.CategoryColors[pin.category]or{1,1,1};local hex=string.format("%02x%02x%02x",math.floor(color[1]*255),math.floor(color[2]*255),math.floor(color[3]*255))
+            row.label:SetText("|cff"..hex..pin.title.."|r");row.detail:SetText(pin.category.." - "..pin.owner.." - "..place); row:Show()
         else row.pin = nil; row:Hide() end
     end
+    self:RefreshDashboardPins()
 end
 
 function HCM:ToggleManager()
     local frame = self:CreateManager()
-    if frame:IsShown() then frame:Hide() else self:RefreshManager(); frame:Show() end
+    if frame:IsShown() then frame:Hide() else frame:Show();self:RefreshDashboardMap();self:RefreshManager() end
+end
+
+function HCM:OpenDashboard(mode)
+    local frame=self:CreateManager();frame:Show();self:SetDashboardMode(mode or frame.mode or"Zone");self:RefreshManager()
 end
 
 function HCM:CreateMinimapButton()
@@ -159,7 +356,7 @@ function HCM:CreateMinimapButton()
     local border = button:CreateTexture(nil, "OVERLAY"); border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder"); border:SetWidth(53); border:SetHeight(53); border:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:RegisterForDrag("LeftButton")
-    button:SetScript("OnClick", function() if arg1 == "RightButton" then HCM:OpenDungeonBrowser() else HCM:ToggleManager() end end)
+    button:SetScript("OnClick", function() if arg1 == "RightButton" then HCM:OpenDashboard("Dungeon") else HCM:ToggleManager() end end)
     button:SetScript("OnDragStart", function() this.dragging = 1 end)
     button:SetScript("OnDragStop", function() this.dragging = nil end)
     button:SetScript("OnUpdate", function()

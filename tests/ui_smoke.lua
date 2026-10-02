@@ -14,7 +14,7 @@ function methods:CreateTexture()return object("Texture",self)end;function method
 function methods:Show()self.shown=true end;function methods:Hide()self.shown=false end;function methods:IsShown()return self.shown end
 function methods:GetLeft()return 100 end;function methods:GetTop()return 700 end;function methods:GetEffectiveScale()return 1 end;function methods:GetID()return 1 end
 function methods:GetCenter()return 500,500 end
-function methods:AddMessage()end;function methods:StartMoving()end;function methods:StopMovingOrSizing()end
+function methods:AddMessage()end;function methods:StartMoving()self.moving=true end;function methods:StopMovingOrSizing()self.moving=false end
 Frame.__index=function(self,key)if methods[key]then return methods[key]end;if string.find(key,"^[A-Z]")then return function()end end end
 function CreateFrame(kind,name,parent)local f=object(kind,parent);if name then _G[name]=f end;return f end
 UIParent=CreateFrame("Frame","UIParent");Minimap=CreateFrame("Frame","Minimap",UIParent);GameTooltip=CreateFrame("Frame","GameTooltip",UIParent)
@@ -37,4 +37,12 @@ HCM:OpenDungeonBrowser("TheDeadmines");assert(HCM.DungeonFrame and HCM.DungeonFr
 HCM:OpenPinEditor({continent=0,zone="",x=0,y=0,instance="TheDeadmines",ix=.3,iy=.4});HCM.Editor.name:SetText("Boss corner");this=HCM.Editor.save;HCM.Editor.save.scripts.OnClick()
 HCM:RefreshDungeonPins();assert(HCM.DungeonFrame.pins[1].pin and HCM.DungeonFrame.pins[1].pin.instance=="TheDeadmines","dungeon pin was not drawn")
 HCM:RefreshManager();assert(HCM.Manager.rows[1].pin,"manager did not list pins")
+HCM.Manager:Show();HCM:SetDashboardMode("Zone");HCM:RefreshManager()
+assert(HCM.Manager.mode=="Zone" and HCM.Manager.mapPins[1].pin,"dashboard zone tab did not render pins")
+this=HCM.Manager.titlebar;HCM.Manager.titlebar.scripts.OnDragStart();assert(HCM.Manager.moving,"titlebar did not start window drag");HCM.Manager.titlebar.scripts.OnDragStop();assert(not HCM.Manager.moving,"titlebar did not stop window drag")
+this=HCM.Manager.minimize;HCM.Manager.minimize.scripts.OnClick();assert(HCM.Manager.minimized and not HCM.Manager.content:IsShown(),"minimize button did not collapse dashboard");HCM.Manager.minimize.scripts.OnClick();assert(not HCM.Manager.minimized and HCM.Manager.content:IsShown(),"minimize button did not restore dashboard")
+local outdoor=HCM:GetPin(HCM.Manager.mapPins[1].pin.id);local oldX,oldY,oldRevision=outdoor.x,outdoor.y,outdoor.revision;local drag=HCM.Manager.mapPins[1]
+this=drag;drag.scripts.OnDragStart();drag.scripts.OnUpdate();drag.scripts.OnDragStop();assert(HCM.PendingMove and outdoor.x==oldX and outdoor.y==oldY,"drag changed saved coordinates before Save")
+this=HCM.MoveBar.undo;HCM.MoveBar.undo.scripts.OnClick();assert(not HCM.PendingMove and outdoor.x==oldX and outdoor.y==oldY,"Undo did not restore pin")
+this=drag;drag.scripts.OnDragStart();drag.scripts.OnUpdate();drag.scripts.OnDragStop();this=HCM.MoveBar.save;HCM.MoveBar.save.scripts.OnClick();assert(not HCM.PendingMove and outdoor.revision==oldRevision+1 and(outdoor.x~=oldX or outdoor.y~=oldY),"Save did not commit dragged pin")
 print("HC Mapper UI smoke test passed")

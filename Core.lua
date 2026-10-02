@@ -1,7 +1,7 @@
 HCMapper = {}
 
 local HCM = HCMapper
-HCM.VERSION = "0.1.1"
+HCM.VERSION = "0.2.0"
 HCM.PROTOCOL = "HCM1"
 HCM.CHANNEL = "HCMapper"
 HCM.MAX_PINS = 500
@@ -128,6 +128,26 @@ function HCM:CreatePin(data)
     return self:SavePin(data, 1)
 end
 
+function HCM:CommitPinMove(id, position)
+    local pin = self:GetPin(id)
+    if not pin or self:NormalizeName(pin.owner) ~= self:NormalizeName(self:PlayerName()) then return nil end
+    position = position or {}
+    if pin.instance ~= "" then
+        local x, y = tonumber(position.ix), tonumber(position.iy)
+        if not x or not y or x < 0 or x > 1 or y < 0 or y > 1 then return nil end
+        pin.ix, pin.iy = x, y
+    else
+        local x, y = tonumber(position.x), tonumber(position.y)
+        if not x or not y or x < 0 or x > 1 or y < 0 or y > 1 then return nil end
+        pin.x, pin.y = x, y
+    end
+    pin.revision = (tonumber(pin.revision) or 1) + 1
+    pin.updatedAt = self:Now()
+    if pin.scope ~= "Private" and self.SharePin then self:SharePin(pin) end
+    self:RefreshAll()
+    return pin
+end
+
 function HCM:DeletePin(id, broadcast)
     local pin, index = self:GetPin(id)
     if not pin or self:NormalizeName(pin.owner) ~= self:NormalizeName(self:PlayerName()) then return nil end
@@ -189,7 +209,7 @@ SLASH_HCMAPPER2 = "/hcmapper"
 SlashCmdList.HCMAPPER = function(message)
     message = string.lower(Trim(message, 30))
     if message == "map" and ToggleWorldMap then ToggleWorldMap()
-    elseif message == "dungeon" and HCM.OpenDungeonBrowser then HCM:OpenDungeonBrowser()
+    elseif message == "dungeon" and HCM.OpenDashboard then HCM:OpenDashboard("Dungeon")
     elseif message == "sync" and HCM.RequestSync then HCM:RequestSync()
     elseif message == "reset" then HCMapperDB.window = nil; HCMapperDB.dungeonWindow = nil; HCM:Print("window positions reset")
     elseif HCM.ToggleManager then HCM:ToggleManager() end

@@ -9,6 +9,7 @@ end
 function HCM:CreateMapPin(parent)
     local button = CreateFrame("Button", nil, parent)
     button:SetWidth(24); button:SetHeight(24); button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    button:RegisterForDrag("LeftButton")
     button.icon = button:CreateTexture(nil, "ARTWORK"); button.icon:SetAllPoints(button)
     button.ring = button:CreateTexture(nil, "OVERLAY"); button.ring:SetTexture("Interface\\Buttons\\UI-ActionButton-Border"); button.ring:SetBlendMode("ADD"); button.ring:SetWidth(40); button.ring:SetHeight(40); button.ring:SetPoint("CENTER", button, "CENTER", 0, 0)
     button:SetScript("OnEnter", function() if this.pin then HCM:ShowPinTooltip(this, this.pin) end end)
@@ -16,6 +17,9 @@ function HCM:CreateMapPin(parent)
     button:SetScript("OnClick", function()
         if this.pin and arg1 == "RightButton" and IsShiftKeyDown() then HCM:DeletePin(this.pin.id, 1) end
     end)
+    button:SetScript("OnDragStart", function() if HCM.BeginPinDrag then HCM:BeginPinDrag(this) end end)
+    button:SetScript("OnDragStop", function() if HCM.EndPinDrag then HCM:EndPinDrag(this) end end)
+    button:SetScript("OnUpdate", function() if this.dragging and HCM.UpdatePinDrag then HCM:UpdatePinDrag(this) end end)
     return button
 end
 
@@ -29,7 +33,9 @@ function HCM:RefreshWorldPins()
     for i = 1, table.getn(self.DB.pins) do
         local pin = self.DB.pins[i]
         if pin.instance == "" and self:VisiblePin(pin) then
-            local x, y = self:ProjectPosition(pin.continent, pin.zone, pin.x, pin.y, targetContinent, targetZone)
+            local px,py=pin.x,pin.y
+            if self.PendingMove and self.PendingMove.pin.id==pin.id then px,py=self.PendingMove.x,self.PendingMove.y end
+            local x, y = self:ProjectPosition(pin.continent, pin.zone, px, py, targetContinent, targetZone)
             if x and y and x >= 0 and x <= 1 and y >= 0 and y <= 1 then table.insert(visible, { pin=pin, x=x, y=y }) end
         end
     end
@@ -72,7 +78,7 @@ function HCM:InitializeWorldMap()
     self.WorldOverlay:SetFrameLevel(WorldMapButton:GetFrameLevel()+5)
     self.WorldPins = {}
     local i
-    for i=1,120 do self.WorldPins[i]=self:CreateMapPin(self.WorldOverlay); self.WorldPins[i]:Hide() end
+    for i=1,120 do self.WorldPins[i]=self:CreateMapPin(self.WorldOverlay); self.WorldPins[i].mapKind="world"; self.WorldPins[i]:Hide() end
     self.WorldAdd = Button(WorldMapFrame, "Add Pin", 90)
     self.WorldAdd:SetPoint("TOPRIGHT", WorldMapFrame, "TOPRIGHT", -145, -6)
     self.WorldAdd:SetScript("OnClick", function()

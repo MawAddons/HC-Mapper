@@ -56,7 +56,7 @@ function HCM:CreateDungeonBrowser()
     frame.previous=Button(frame,"<",36);frame.previous:SetPoint("BOTTOMLEFT",frame,"BOTTOMLEFT",574,27);frame.previous:SetScript("OnClick",function()frame.page=math.max(1,(frame.page or 1)-1);HCM:RefreshDungeonList()end)
     frame.pageLabel=Text(frame,"","GameFontHighlightSmall");frame.pageLabel:SetPoint("LEFT",frame.previous,"RIGHT",12,0)
     frame.next=Button(frame,">",36);frame.next:SetPoint("BOTTOMRIGHT",frame,"BOTTOMRIGHT",-25,27);frame.next:SetScript("OnClick",function()frame.page=math.min(4,(frame.page or 1)+1);HCM:RefreshDungeonList()end)
-    frame.pins={};for i=1,80 do frame.pins[i]=self:CreateMapPin(frame.map);frame.pins[i]:SetFrameLevel(frame.map:GetFrameLevel()+4);frame.pins[i]:Hide()end
+    frame.pins={};for i=1,80 do frame.pins[i]=self:CreateMapPin(frame.map);frame.pins[i].mapKind="dungeon";frame.pins[i]:SetFrameLevel(frame.map:GetFrameLevel()+4);frame.pins[i]:Hide()end
     frame.page=1;frame.selected="TheDeadmines";frame:Hide();self.DungeonFrame=frame
     return frame
 end
@@ -80,7 +80,7 @@ function HCM:RefreshDungeonPins()
     local frame=self.DungeonFrame;if not frame or not frame:IsShown()then return end
     local visible={};local i
     for i=1,table.getn(self.DB.pins)do local pin=self.DB.pins[i];if pin.instance==frame.selected and self:VisiblePin(pin)then table.insert(visible,pin)end end
-    for i=1,80 do local button,pin=frame.pins[i],visible[i];if pin then button.pin=pin;button.icon:SetTexture(self.CategoryIcons[pin.category]or self.CategoryIcons.Note);local c=self.CategoryColors[pin.category]or{1,1,1};button.ring:SetVertexColor(c[1],c[2],c[3]);button:ClearAllPoints();button:SetPoint("CENTER",frame.map,"TOPLEFT",pin.ix*frame.map:GetWidth(),-pin.iy*frame.map:GetHeight());button:Show()else button.pin=nil;button:Hide()end end
+    for i=1,80 do local button,pin=frame.pins[i],visible[i];if pin then local px,py=pin.ix,pin.iy;if HCM.PendingMove and HCM.PendingMove.pin.id==pin.id then px,py=HCM.PendingMove.ix,HCM.PendingMove.iy end;button.pin=pin;button.icon:SetTexture(self.CategoryIcons[pin.category]or self.CategoryIcons.Note);local c=self.CategoryColors[pin.category]or{1,1,1};button.ring:SetVertexColor(c[1],c[2],c[3]);button:ClearAllPoints();button:SetPoint("CENTER",frame.map,"TOPLEFT",px*frame.map:GetWidth(),-py*frame.map:GetHeight());button:Show()else button.pin=nil;button:Hide()end end
     frame.caption:SetText(self:DungeonName(frame.selected).." - "..table.getn(visible).." pin(s)")
 end
 

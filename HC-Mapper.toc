@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
-## Notes: v0.1.1: chat-safe peer sync and a movable map minimap button
+## Notes: v0.2.0: mockup-inspired dashboard with draggable pins and save/undo
 ## Author: MawAddons
-## Version: 0.1.1
+## Version: 0.2.0
 ## SavedVariables: HCMapperDB
 
 Core.lua
