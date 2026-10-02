@@ -57,6 +57,7 @@ assert(mine and mine.owner=="Tester" and table.getn(HCM.DB.pins)==1,"local pin w
 assert(table.getn(HCM.Network.queue)==1,"shared pin was not queued")
 local message=HCM:PinMessage(mine)
 assert(message and string.len(message)<=240,"pin message exceeds Vanilla chat limit")
+assert(not string.find(message,"|"),"pin message contains a raw chat escape character")
 
 local private=HCM:CreatePin({title="Private note",scope="Private",category="Note",continent=1,zone="Durotar",x=.2,y=.3,instance=""})
 assert(private and table.getn(HCM.Network.queue)==1,"private pin entered sync queue")

@@ -67,10 +67,10 @@ function HCM:PinMessage(pin)
     local fields = { self.PROTOCOL, "P", Escape(pin.id), tostring(pin.revision or 1), Escape(pin.owner), pin.scope,
         tostring(pin.continent or 0), Escape(pin.zone), tostring(pin.x or 0), tostring(pin.y or 0), Escape(pin.instance),
         tostring(pin.ix or 0), tostring(pin.iy or 0), Escape(pin.category), Escape(pin.title), Escape(pin.note), tostring(age) }
-    local message = table.concat(fields, "|")
+    local message = table.concat(fields, "~")
     while string.len(message) > self.MAX_MESSAGE and string.len(fields[16]) > 0 do
         fields[16] = string.sub(fields[16], 1, string.len(fields[16]) - 1)
-        message = table.concat(fields, "|")
+        message = table.concat(fields, "~")
     end
     if string.len(message) > self.MAX_MESSAGE then return nil end
     return message
@@ -83,15 +83,15 @@ function HCM:SharePin(pin, delay)
 end
 
 function HCM:ShareDelete(id, revision, owner, scope)
-    local message = table.concat({ self.PROTOCOL, "D", Escape(id), tostring(revision), Escape(owner) }, "|")
+    local message = table.concat({ self.PROTOCOL, "D", Escape(id), tostring(revision), Escape(owner) }, "~")
     self:QueueNetwork(message, scope == "Guild" and "GUILD" or "PEER", "delete:" .. id)
 end
 
 function HCM:RequestSync(silent)
     if self.DB.settings.sync ~= 1 then self:Print("sync is disabled"); return end
     local nonce = self:NewID()
-    self:QueueNetwork(self.PROTOCOL .. "|Q|" .. Escape(nonce), "PEER", "query-peer")
-    self:QueueNetwork(self.PROTOCOL .. "|Q|" .. Escape(nonce), "GUILD", "query-guild")
+    self:QueueNetwork(self.PROTOCOL .. "~Q~" .. Escape(nonce), "PEER", "query-peer")
+    self:QueueNetwork(self.PROTOCOL .. "~Q~" .. Escape(nonce), "GUILD", "query-guild")
     if not silent then self:Print("peer refresh queued") end
 end
 
@@ -125,7 +125,7 @@ end
 
 function HCM:HandleNetwork(message, sender, mode)
     if type(message) ~= "string" or string.len(message) > self.MAX_MESSAGE or not self:AllowedSender(sender) then return end
-    local fields = Split(message, "|")
+    local fields = Split(message, "~")
     if fields[1] ~= self.PROTOCOL then return end
     if fields[2] == "Q" then self:QueueSnapshot(mode); return end
     if fields[2] == "D" then self:ApplyDelete(Unescape(fields[3]), tonumber(fields[4]), Unescape(fields[5])); return end

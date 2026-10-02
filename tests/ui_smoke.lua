@@ -13,6 +13,7 @@ function methods:SetJustifyH()end;function methods:SetOwner()end;function method
 function methods:CreateTexture()return object("Texture",self)end;function methods:CreateFontString()return object("FontString",self)end
 function methods:Show()self.shown=true end;function methods:Hide()self.shown=false end;function methods:IsShown()return self.shown end
 function methods:GetLeft()return 100 end;function methods:GetTop()return 700 end;function methods:GetEffectiveScale()return 1 end;function methods:GetID()return 1 end
+function methods:GetCenter()return 500,500 end
 function methods:AddMessage()end;function methods:StartMoving()end;function methods:StopMovingOrSizing()end
 Frame.__index=function(self,key)if methods[key]then return methods[key]end;if string.find(key,"^[A-Z]")then return function()end end end
 function CreateFrame(kind,name,parent)local f=object(kind,parent);if name then _G[name]=f end;return f end

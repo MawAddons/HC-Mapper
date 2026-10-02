@@ -153,14 +153,40 @@ end
 
 function HCM:CreateMinimapButton()
     local button = CreateFrame("Button", "HCMapperMinimapButton", Minimap)
-    button:SetWidth(31); button:SetHeight(31); button:SetPoint("TOPLEFT", Minimap, "TOPLEFT", 2, -2)
+    button:SetWidth(31); button:SetHeight(31)
     button:SetFrameStrata("MEDIUM"); button:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
     local icon = button:CreateTexture(nil, "BACKGROUND"); icon:SetTexture("Interface\\Icons\\INV_Misc_Map_01"); icon:SetWidth(20); icon:SetHeight(20); icon:SetPoint("CENTER", button, "CENTER", 0, 0)
     local border = button:CreateTexture(nil, "OVERLAY"); border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder"); border:SetWidth(53); border:SetHeight(53); border:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
-    button:SetScript("OnClick", function() HCM:ToggleManager() end)
+    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    button:RegisterForDrag("LeftButton")
+    button:SetScript("OnClick", function() if arg1 == "RightButton" then HCM:OpenDungeonBrowser() else HCM:ToggleManager() end end)
+    button:SetScript("OnDragStart", function() this.dragging = 1 end)
+    button:SetScript("OnDragStop", function() this.dragging = nil end)
+    button:SetScript("OnUpdate", function()
+        if not this.dragging then return end
+        local scale = Minimap:GetEffectiveScale() or 1
+        local cursorX, cursorY = GetCursorPosition()
+        local centerX, centerY = Minimap:GetCenter()
+        local dx, dy = cursorX / scale - centerX, cursorY / scale - centerY
+        local angle
+        if math.atan2 then angle = math.atan2(dy, dx)
+        elseif dx == 0 then angle = dy >= 0 and math.pi / 2 or -math.pi / 2
+        else angle = math.atan(dy / dx); if dx < 0 then angle = angle + math.pi end end
+        HCMapperDB.minimapAngle = angle
+        HCM:PositionMinimapButton()
+    end)
     button:SetScript("OnEnter", function() GameTooltip:SetOwner(this,"ANCHOR_LEFT"); GameTooltip:AddLine("HC Mapper"); GameTooltip:AddLine("Click to manage map pins",1,1,1); GameTooltip:Show() end)
     button:SetScript("OnLeave", function() GameTooltip:Hide() end)
     self.MinimapButton = button
+    self:PositionMinimapButton()
+end
+
+function HCM:PositionMinimapButton()
+    if not self.MinimapButton then return end
+    HCMapperDB.minimapAngle = tonumber(HCMapperDB.minimapAngle) or 3.75
+    local radius = 82
+    self.MinimapButton:ClearAllPoints()
+    self.MinimapButton:SetPoint("CENTER", Minimap, "CENTER", math.cos(HCMapperDB.minimapAngle) * radius, math.sin(HCMapperDB.minimapAngle) * radius)
 end
 
 function HCM:InitializeUI()

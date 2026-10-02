@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
-## Notes: v0.1.0: peer-synced pins across world, continent, zone, and dungeon maps
+## Notes: v0.1.1: chat-safe peer sync and a movable map minimap button
 ## Author: MawAddons
-## Version: 0.1.0
+## Version: 0.1.1
 ## SavedVariables: HCMapperDB
 
 Core.lua
