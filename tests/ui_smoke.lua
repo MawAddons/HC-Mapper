@@ -22,7 +22,12 @@ WorldMapFrame=CreateFrame("Frame","WorldMapFrame",UIParent);WorldMapFrame:SetWid
 WorldMapButton=CreateFrame("Button","WorldMapButton",WorldMapFrame);WorldMapButton:SetWidth(800);WorldMapButton:SetHeight(600)
 DEFAULT_CHAT_FRAME=CreateFrame("Frame","ChatFrame1",UIParent);ChatFontNormal={};SlashCmdList={}
 function GetTime()return 1000 end;function time()return 2000001000 end;function UnitName()return"Tester"end;function GetGuildInfo()return"Guild"end
-function GetCurrentMapContinent()return 2 end;function GetCurrentMapZone()return 1 end;function GetMapInfo()return"Elwynn"end
+local mapContinent,mapZone=2,1
+function GetCurrentMapContinent()return mapContinent end;function GetCurrentMapZone()return mapZone end
+function GetMapInfo()if mapZone>0 then return"Elwynn"elseif mapContinent==1 then return"Kalimdor"elseif mapContinent==2 then return"Azeroth"end end
+function SetMapZoom(continent,zone)mapContinent=continent or 0;mapZone=zone or 0 end;function SetMapToCurrentZone()mapContinent=2;mapZone=1 end
+function ProcessMapClick()if mapContinent==0 then mapContinent=2;mapZone=0 elseif mapZone==0 then mapZone=1 end end
+function GetNumMapOverlays()if mapZone>0 then return 1 end;return 0 end;function GetMapOverlayInfo()return"Interface\\WorldMap\\Elwynn\\Elwynn",300,300,100,100,0,0 end
 function GetCursorPosition()return 500,400 end;function GetChannelName()return 7 end;function JoinChannelByName()end;function getglobal()return nil end
 function SendChatMessage()end;function SendAddonMessage()end;function RegisterAddonMessagePrefix()end;function IsShiftKeyDown()return nil end;function ToggleWorldMap()WorldMapFrame:Show()end
 
@@ -39,6 +44,11 @@ HCM:RefreshDungeonPins();assert(HCM.DungeonFrame.pins[1].pin and HCM.DungeonFram
 HCM:RefreshManager();assert(HCM.Manager.rows[1].pin,"manager did not list pins")
 HCM.Manager:Show();HCM:SetDashboardMode("Zone");HCM:RefreshManager()
 assert(HCM.Manager.mode=="Zone" and HCM.Manager.mapPins[1].pin,"dashboard zone tab did not render pins")
+assert(HCM.Manager.explorationCount>0,"discovered map overlays were not rendered")
+HCM:SetDashboardMode("World");assert(HCM.Manager.mode=="World"and mapContinent==0,"World tab did not select the world map")
+this=HCM.Manager.map;arg1="LeftButton";HCM.Manager.map.scripts.OnClick();assert(HCM.Manager.mode=="Continent"and mapContinent==2 and mapZone==0,"world map click did not navigate to a continent")
+HCM.Manager.map.scripts.OnClick();assert(HCM.Manager.mode=="Zone"and mapZone==1 and HCM.Manager.explorationCount>0,"continent click did not navigate to the discovered zone map")
+arg1="RightButton";HCM.Manager.map.scripts.OnClick();assert(HCM.Manager.mode=="Continent"and mapZone==0,"right-click did not navigate back");HCM:SetDashboardMode("Zone");arg1=nil
 this=HCM.Manager.mapPins[1];HCM.Manager.mapPins[1].scripts.OnEnter();HCM.Manager.mapPins[1].scripts.OnLeave()
 this=HCM.Manager.titlebar;HCM.Manager.titlebar.scripts.OnDragStart();assert(HCM.Manager.moving,"titlebar did not start window drag");HCM.Manager.titlebar.scripts.OnDragStop();assert(not HCM.Manager.moving,"titlebar did not stop window drag")
 this=HCM.Manager.minimize;HCM.Manager.minimize.scripts.OnClick();assert(HCM.Manager.minimized and not HCM.Manager.content:IsShown(),"minimize button did not collapse dashboard");HCM.Manager.minimize.scripts.OnClick();assert(not HCM.Manager.minimized and HCM.Manager.content:IsShown(),"minimize button did not restore dashboard")

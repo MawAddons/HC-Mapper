@@ -130,7 +130,7 @@ function HCM:CreateManager()
         if index>table.getn(HCM.DungeonMaps or{})then index=1 end
         if HCM.DungeonMaps and HCM.DungeonMaps[index]then frame.dungeonKey=HCM.DungeonMaps[index][1];HCM:RefreshDashboardMap()end
     end)
-    frame.map=CreateFrame("Button",nil,frame.content);frame.map:SetWidth(680);frame.map:SetHeight(486);frame.map:SetPoint("TOPLEFT",frame.content,"TOPLEFT",18,-66);frame.map:RegisterForClicks("LeftButtonUp")
+    frame.map=CreateFrame("Button",nil,frame.content);frame.map:SetWidth(680);frame.map:SetHeight(486);frame.map:SetPoint("TOPLEFT",frame.content,"TOPLEFT",18,-66);frame.map:RegisterForClicks("LeftButtonUp","RightButtonUp")
     frame.map:SetBackdrop({bgFile="Interface\\Tooltips\\UI-Tooltip-Background",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",tile=true,tileSize=16,edgeSize=12,insets={left=3,right=3,top=3,bottom=3}})
     frame.map:SetBackdropColor(.01,.01,.01,1)
     frame.tiles={}
@@ -140,14 +140,8 @@ function HCM:CreateManager()
         local col=(i-1)-math.floor((i-1)/4)*4;local row=math.floor((i-1)/4);tile:SetPoint("TOPLEFT",frame.map,"TOPLEFT",col*170,-row*162);frame.tiles[i]=tile
     end
     frame.dungeonTexture=frame.map:CreateTexture(nil,"BACKGROUND");frame.dungeonTexture:SetAllPoints(frame.map);frame.dungeonTexture:Hide()
-    frame.map:SetScript("OnClick",function()
-        if not frame.addMode then return end
-        local x,y=HCM:CursorPosition(frame.map);frame.addMode=nil;frame.newPin:SetText("+ New Pin")
-        if not x or not y then return end
-        if frame.mode=="Dungeon" then HCM:OpenPinEditor({continent=0,zone="",x=0,y=0,instance=frame.dungeonKey,ix=x,iy=y})
-        elseif frame.mode=="Zone" then HCM:OpenPinEditor({continent=frame.contextContinent,zone=frame.contextZone,x=x,y=y,instance=""})
-        else HCM:Print("zoom to Zone before creating an outdoor pin") end
-    end)
+    frame.overlays={}
+    frame.map:SetScript("OnClick",function()HCM:DashboardMapClick(arg1)end)
     frame.mapPins={};for i=1,120 do frame.mapPins[i]=self:CreateMapPin(frame.map);frame.mapPins[i].mapKind="dashboard";frame.mapPins[i]:SetFrameLevel(frame.map:GetFrameLevel()+4);frame.mapPins[i]:Hide()end
 
     frame.side=CreateFrame("Frame",nil,frame.content);frame.side:SetWidth(278);frame.side:SetHeight(486);frame.side:SetPoint("TOPRIGHT",frame.content,"TOPRIGHT",-18,-66)
@@ -185,8 +179,11 @@ function HCM:CreateManager()
         card:SetScript("OnClick",function()HCM:SetDashboardMode(this.mode)end);frame.modeCards[i]=card
     end
     frame.status = Text(frame.content, "", "GameFontHighlightSmall"); frame.status:SetPoint("BOTTOMLEFT", frame.content, "BOTTOMLEFT", 24, 10)
-    frame.hint = Text(frame.content, "Drag your own pin, then Save or Undo.", "GameFontDisableSmall"); frame.hint:SetPoint("BOTTOMRIGHT", frame.content, "BOTTOMRIGHT", -24, 10)
+    frame.hint = Text(frame.content, "Left-click: zoom  Right-click: back  Drag pin: move", "GameFontDisableSmall"); frame.hint:SetPoint("BOTTOMRIGHT", frame.content, "BOTTOMRIGHT", -24, 10)
     frame.mode="Zone";frame.dungeonKey="TheDeadmines"
+    frame.mapEvents=CreateFrame("Frame",nil,frame);frame.mapEvents:RegisterEvent("WORLD_MAP_UPDATE")
+    frame.mapEvents:SetScript("OnEvent",function()if frame:IsShown()and frame.mode~="Dungeon"then HCM:RefreshDashboardExploration()end end)
+    frame:SetScript("OnHide",function()if SetMapToCurrentZone then SetMapToCurrentZone()end end)
     frame:Hide(); self.Manager = frame
     self:CreateMoveBar()
     return frame
@@ -204,22 +201,58 @@ function HCM:CreateMoveBar()
 end
 
 function HCM:SetDashboardMode(mode)
-    local frame=self:CreateManager();frame.mode=mode or"Zone";frame.addMode=nil;frame.newPin:SetText("+ New Pin")
+    local frame=self:CreateManager();local continent,zone,zoneIndex=self:GetMapContext()
+    if zoneIndex>0 then frame.lastContinent=continent;frame.lastZoneIndex=zoneIndex;frame.lastZone=zone end
+    frame.mode=mode or"Zone";frame.addMode=nil;frame.newPin:SetText("+ New Pin")
     self:RefreshDashboardMap()
+end
+
+function HCM:DashboardMapClick(mouseButton)
+    local frame=self.Manager;if not frame then return end
+    local x,y=self:CursorPosition(frame.map)
+    if frame.addMode then
+        if mouseButton=="RightButton"then frame.addMode=nil;frame.newPin:SetText("+ New Pin");return end
+        frame.addMode=nil;frame.newPin:SetText("+ New Pin")
+        if not x or not y then return end
+        if frame.mode=="Dungeon"then self:OpenPinEditor({continent=0,zone="",x=0,y=0,instance=frame.dungeonKey,ix=x,iy=y})
+        elseif frame.mode=="Zone"then self:OpenPinEditor({continent=frame.contextContinent,zone=frame.contextZone,x=x,y=y,instance=""})
+        else self:Print("zoom to Zone before creating an outdoor pin")end
+        return
+    end
+    if frame.mode=="Dungeon"or not x or not y then return end
+    if mouseButton=="RightButton"then
+        local continent,zone,zoneIndex=self:GetMapContext()
+        if zoneIndex>0 and continent>0 then if SetMapZoom then SetMapZoom(continent)end;frame.mode="Continent"
+        elseif continent>0 then if SetMapZoom then SetMapZoom(0)end;frame.mode="World" end
+    elseif ProcessMapClick then
+        ProcessMapClick(x,y)
+        local continent,zone,zoneIndex=self:GetMapContext()
+        if zoneIndex>0 then frame.mode="Zone";frame.lastContinent=continent;frame.lastZoneIndex=zoneIndex;frame.lastZone=zone
+        elseif continent>0 then frame.mode="Continent";frame.lastContinent=continent
+        else frame.mode="World"end
+    end
+    self:RefreshDashboardMap(1)
 end
 
 function HCM:RefreshDashboardMap()
     local frame=self.Manager;if not frame then return end
     local mode=frame.mode or"Zone";local key;local continent,zone,zoneIndex=self:GetMapContext()
-    if mode=="World"then key="World";frame.contextContinent=0;frame.contextZone="";frame.breadcrumb:SetText("Azeroth")
+    if mode=="World"then
+        if SetMapZoom then SetMapZoom(0)end;key="World";frame.contextContinent=0;frame.contextZone="";frame.breadcrumb:SetText("Azeroth")
     elseif mode=="Continent"then
-        if continent<1 then continent=2 end;key=continent==1 and"Kalimdor"or"Azeroth";frame.contextContinent=continent;frame.contextZone="";frame.breadcrumb:SetText("Azeroth  >  "..(continent==1 and"Kalimdor"or"Eastern Kingdoms"))
+        if continent<1 then continent=frame.lastContinent or 0 end
+        if continent<1 and SetMapToCurrentZone then SetMapToCurrentZone();continent,zone,zoneIndex=self:GetMapContext()end
+        if continent<1 then continent=2 end;frame.lastContinent=continent;if SetMapZoom then SetMapZoom(continent)end
+        key=continent==1 and"Kalimdor"or"Azeroth";frame.contextContinent=continent;frame.contextZone="";frame.breadcrumb:SetText("Azeroth  >  "..(continent==1 and"Kalimdor"or"Eastern Kingdoms"))
     elseif mode=="Dungeon"then
         key=frame.dungeonKey or"TheDeadmines";frame.contextContinent=0;frame.contextZone="";frame.breadcrumb:SetText("Dungeon  >  "..self:DungeonName(key))
     else
-        if continent<1 or zoneIndex<1 or zone==""then
+        if zoneIndex<1 and frame.lastContinent and frame.lastZoneIndex and SetMapZoom then
+            SetMapZoom(frame.lastContinent,frame.lastZoneIndex);continent,zone,zoneIndex=self:GetMapContext()
+        elseif continent<1 or zoneIndex<1 or zone==""then
             if SetMapToCurrentZone then SetMapToCurrentZone();continent,zone,zoneIndex=self:GetMapContext()end
         end
+        if zoneIndex>0 then frame.lastContinent=continent;frame.lastZoneIndex=zoneIndex;frame.lastZone=zone end
         key=(GetMapInfo and GetMapInfo())or zone;frame.contextContinent=continent;frame.contextZone=zone;frame.breadcrumb:SetText("Azeroth  >  "..(continent==1 and"Kalimdor"or"Eastern Kingdoms").."  >  "..(zone~=""and zone or"Current zone"))
     end
     local i
@@ -229,8 +262,39 @@ function HCM:RefreshDashboardMap()
         frame.dungeonTexture:Hide();frame.nextDungeon:Hide()
         for i=1,12 do frame.tiles[i]:SetTexture("Interface\\WorldMap\\"..key.."\\"..key..i);frame.tiles[i]:Show()end
     end
+    self:RefreshDashboardExploration()
     for i=1,4 do local selected=frame.tabs[i].mode==mode;frame.tabs[i]:SetText(selected and("[ "..frame.tabs[i].mode.." ]")or frame.tabs[i].mode)end
     self:RefreshDashboardPins()
+end
+
+function HCM:RefreshDashboardExploration()
+    local frame=self.Manager;if not frame then return end
+    local used=0;local i
+    if frame.mode~="Dungeon"and GetNumMapOverlays and GetMapOverlayInfo then
+        for i=1,GetNumMapOverlays()do
+            local textureName,textureWidth,textureHeight,offsetX,offsetY=GetMapOverlayInfo(i)
+            if textureName and textureName~=""and textureWidth and textureHeight then
+                local wide=math.ceil(textureWidth/256);local tall=math.ceil(textureHeight/256);local row,col
+                for row=1,tall do
+                    local pixelHeight=row<tall and 256 or(textureHeight-math.floor((textureHeight-1)/256)*256)
+                    local fileHeight=16;while fileHeight<pixelHeight do fileHeight=fileHeight*2 end
+                    for col=1,wide do
+                        local pixelWidth=col<wide and 256 or(textureWidth-math.floor((textureWidth-1)/256)*256)
+                        local fileWidth=16;while fileWidth<pixelWidth do fileWidth=fileWidth*2 end
+                        used=used+1
+                        if not frame.overlays[used]then frame.overlays[used]=frame.map:CreateTexture(nil,"ARTWORK")end
+                        local overlay=frame.overlays[used];overlay:ClearAllPoints()
+                        overlay:SetWidth(pixelWidth/1002*frame.map:GetWidth());overlay:SetHeight(pixelHeight/668*frame.map:GetHeight())
+                        overlay:SetTexCoord(0,pixelWidth/fileWidth,0,pixelHeight/fileHeight)
+                        overlay:SetPoint("TOPLEFT",frame.map,"TOPLEFT",(offsetX+256*(col-1))/1002*frame.map:GetWidth(),-(offsetY+256*(row-1))/668*frame.map:GetHeight())
+                        overlay:SetTexture(textureName..((row-1)*wide+col));overlay:Show()
+                    end
+                end
+            end
+        end
+    end
+    for i=used+1,table.getn(frame.overlays)do frame.overlays[i]:Hide()end
+    frame.explorationCount=used
 end
 
 function HCM:RefreshDashboardPins()
