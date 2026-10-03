@@ -135,7 +135,8 @@ function HCM:CreateManager()
     frame.tiles={}
     for i=1,12 do
         local tile=frame.map:CreateTexture(nil,"BACKGROUND");tile:SetWidth(170);tile:SetHeight(162)
-        local col=(i-1)%4;local row=math.floor((i-1)/4);tile:SetPoint("TOPLEFT",frame.map,"TOPLEFT",col*170,-row*162);frame.tiles[i]=tile
+        -- Lua 5.0 (WoW 1.12) has no modulo operator.
+        local col=(i-1)-math.floor((i-1)/4)*4;local row=math.floor((i-1)/4);tile:SetPoint("TOPLEFT",frame.map,"TOPLEFT",col*170,-row*162);frame.tiles[i]=tile
     end
     frame.dungeonTexture=frame.map:CreateTexture(nil,"BACKGROUND");frame.dungeonTexture:SetAllPoints(frame.map);frame.dungeonTexture:Hide()
     frame.map:SetScript("OnClick",function()
@@ -301,16 +302,6 @@ end
 
 function HCM:UndoPendingMove()
     self.PendingMove=nil;if self.MoveBar then self.MoveBar:Hide()end;self:RefreshAll();self:RefreshDashboardPins()
-end
-
-function HCM:ShowPinTooltip(anchor, pin)
-    GameTooltip:SetOwner(anchor, "ANCHOR_LEFT")
-    GameTooltip:AddLine(pin.title, 1, .82, .2)
-    GameTooltip:AddLine(pin.category .. " - " .. (pin.scope or "Peers"), unpack(self.CategoryColors[pin.category] or {1,1,1}))
-    GameTooltip:AddLine("Shared by " .. pin.owner, .7, .7, .7)
-    if pin.note and pin.note ~= "" then GameTooltip:AddLine(pin.note, 1, 1, 1, 1) end
-    if self:NormalizeName(pin.owner) == self:NormalizeName(self:PlayerName()) then GameTooltip:AddLine("Shift-right-click to delete", .9, .35, .25) end
-    GameTooltip:Show()
 end
 
 function HCM:RefreshManager()

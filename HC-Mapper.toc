@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
-## Notes: v0.2.0: mockup-inspired dashboard with draggable pins and save/undo
+## Notes: v0.2.1: Lua 5.0 dashboard compatibility and reliable pin tooltips
 ## Author: MawAddons
-## Version: 0.2.0
+## Version: 0.2.1
 ## SavedVariables: HCMapperDB
 
 Core.lua

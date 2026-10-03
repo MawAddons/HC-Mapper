@@ -26,7 +26,7 @@ function GetCurrentMapContinent()return 2 end;function GetCurrentMapZone()return
 function GetCursorPosition()return 500,400 end;function GetChannelName()return 7 end;function JoinChannelByName()end;function getglobal()return nil end
 function SendChatMessage()end;function SendAddonMessage()end;function RegisterAddonMessagePrefix()end;function IsShiftKeyDown()return nil end;function ToggleWorldMap()WorldMapFrame:Show()end
 
-dofile("HC-Mapper/Core.lua");dofile("HC-Mapper/MapData.lua");dofile("HC-Mapper/Network.lua");dofile("HC-Mapper/UI.lua");dofile("HC-Mapper/WorldMap.lua");dofile("HC-Mapper/Dungeon.lua")
+dofile("HC-Mapper/Core.lua");assert(HCMapper.ShowPinTooltip,"pin tooltip must be available from Core");dofile("HC-Mapper/MapData.lua");dofile("HC-Mapper/Network.lua");dofile("HC-Mapper/UI.lua");dofile("HC-Mapper/WorldMap.lua");dofile("HC-Mapper/Dungeon.lua")
 local HCM=HCMapper;HCM:InitializeDB();HCM:InitializeNetwork();HCM:InitializeUI();HCM:InitializeWorldMap()
 assert(HCM.Manager and HCM.Editor and HCM.MinimapButton,"main UI did not initialize")
 assert(HCM.WorldAdd and table.getn(HCM.WorldPins)==120,"World Map controls did not initialize")
@@ -39,6 +39,7 @@ HCM:RefreshDungeonPins();assert(HCM.DungeonFrame.pins[1].pin and HCM.DungeonFram
 HCM:RefreshManager();assert(HCM.Manager.rows[1].pin,"manager did not list pins")
 HCM.Manager:Show();HCM:SetDashboardMode("Zone");HCM:RefreshManager()
 assert(HCM.Manager.mode=="Zone" and HCM.Manager.mapPins[1].pin,"dashboard zone tab did not render pins")
+this=HCM.Manager.mapPins[1];HCM.Manager.mapPins[1].scripts.OnEnter();HCM.Manager.mapPins[1].scripts.OnLeave()
 this=HCM.Manager.titlebar;HCM.Manager.titlebar.scripts.OnDragStart();assert(HCM.Manager.moving,"titlebar did not start window drag");HCM.Manager.titlebar.scripts.OnDragStop();assert(not HCM.Manager.moving,"titlebar did not stop window drag")
 this=HCM.Manager.minimize;HCM.Manager.minimize.scripts.OnClick();assert(HCM.Manager.minimized and not HCM.Manager.content:IsShown(),"minimize button did not collapse dashboard");HCM.Manager.minimize.scripts.OnClick();assert(not HCM.Manager.minimized and HCM.Manager.content:IsShown(),"minimize button did not restore dashboard")
 local outdoor=HCM:GetPin(HCM.Manager.mapPins[1].pin.id);local oldX,oldY,oldRevision=outdoor.x,outdoor.y,outdoor.revision;local drag=HCM.Manager.mapPins[1]

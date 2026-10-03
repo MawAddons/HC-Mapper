@@ -1,7 +1,7 @@
 HCMapper = {}
 
 local HCM = HCMapper
-HCM.VERSION = "0.2.0"
+HCM.VERSION = "0.2.1"
 HCM.PROTOCOL = "HCM1"
 HCM.CHANNEL = "HCMapper"
 HCM.MAX_PINS = 500
@@ -52,6 +52,21 @@ function HCM:IsCategory(value)
     local i
     for i = 1, table.getn(self.Categories) do if self.Categories[i] == value then return 1 end end
     return nil
+end
+
+-- Kept in Core so map pins always have a tooltip, even if a later UI module fails to load.
+function HCM:ShowPinTooltip(anchor, pin)
+    if not GameTooltip or not pin then return end
+    GameTooltip:SetOwner(anchor, "ANCHOR_LEFT")
+    GameTooltip:AddLine(pin.title or "Map Pin", 1, .82, .2)
+    local color = self.CategoryColors[pin.category] or { 1, 1, 1 }
+    GameTooltip:AddLine((pin.category or "Note") .. " - " .. (pin.scope or "Peers"), color[1], color[2], color[3])
+    GameTooltip:AddLine("Shared by " .. (pin.owner or "Unknown"), .7, .7, .7)
+    if pin.note and pin.note ~= "" then GameTooltip:AddLine(pin.note, 1, 1, 1, 1) end
+    if self:NormalizeName(pin.owner) == self:NormalizeName(self:PlayerName()) then
+        GameTooltip:AddLine("Drag to move - Shift-right-click to delete", .9, .35, .25)
+    end
+    GameTooltip:Show()
 end
 
 function HCM:InitializeDB()

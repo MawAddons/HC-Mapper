@@ -1,4 +1,4 @@
-# HC Mapper 0.2.0
+# HC Mapper 0.2.1
 
 HC Mapper is a lightweight map pin addon for World of Warcraft 1.12.1. Players can create
 pins on zone maps or included Vanilla dungeon maps and automatically exchange shared pins
