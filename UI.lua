@@ -118,9 +118,10 @@ function HCM:CreateManager()
     frame.searchHint=Text(frame.content,"Search pins...","GameFontDisableSmall");frame.searchHint:SetPoint("LEFT",frame.search,"LEFT",9,0)
     frame.search:SetScript("OnEditFocusGained",function()frame.searchHint:Hide()end)
     frame.search:SetScript("OnEditFocusLost",function()if frame.search:GetText()==""then frame.searchHint:Show()end end)
-    frame.sync=Button(frame.content,"",48,30);frame.sync:SetPoint("LEFT",frame.search,"RIGHT",5,0);frame.sync:SetScript("OnClick",function()HCM:RequestSync()end)
+    frame.sync=Button(frame.content,"",48,30);frame.sync:SetPoint("LEFT",frame.search,"RIGHT",5,0)
     frame.syncIcon=frame.sync:CreateTexture(nil,"ARTWORK");frame.syncIcon:SetTexture("Interface\\Icons\\INV_Gizmo_02");frame.syncIcon:SetWidth(22);frame.syncIcon:SetHeight(22);frame.syncIcon:SetPoint("CENTER",frame.sync,"CENTER",0,0)
-    frame.sync:SetScript("OnEnter",function()GameTooltip:SetOwner(this,"ANCHOR_LEFT");GameTooltip:AddLine("HC Mapper options");GameTooltip:AddLine("Click to request peer sync",1,1,1);GameTooltip:Show()end);frame.sync:SetScript("OnLeave",function()GameTooltip:Hide()end)
+    frame.sync:SetScript("OnClick",function()HCM:Print("sync is automatic; every pin is stored locally")end)
+    frame.sync:SetScript("OnEnter",function()GameTooltip:SetOwner(this,"ANCHOR_LEFT");GameTooltip:AddLine("Automatic sync");GameTooltip:AddLine("Pins are continuously replicated to local databases",1,1,1);GameTooltip:Show()end);frame.sync:SetScript("OnLeave",function()GameTooltip:Hide()end)
 
     frame.breadcrumb=Text(frame.content,"","GameFontNormal");frame.breadcrumb:SetPoint("TOPLEFT",frame.content,"TOPLEFT",26,-43)
     frame.nextDungeon=Button(frame.content,"Next Dungeon >",120,23);frame.nextDungeon:SetPoint("TOPRIGHT",frame.content,"TOPRIGHT",-302,-38);frame.nextDungeon:Hide()
@@ -168,7 +169,7 @@ function HCM:CreateManager()
         row.detail = Text(row, "", "GameFontDisableSmall"); row.detail:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 7, 2); row.detail:SetWidth(200); row.detail:SetJustifyH("LEFT")
         row:SetScript("OnEnter", function() if this.pin then HCM:ShowPinTooltip(this, this.pin) end end)
         row:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        row:SetScript("OnClick", function() if this.pin and IsShiftKeyDown() and arg1 == "RightButton" then HCM:DeletePin(this.pin.id, 1) end end)
+        row:SetScript("OnClick", function() if this.pin and IsShiftKeyDown() and arg1 == "RightButton" then HCM:RequestDeletePin(this.pin.id) end end)
         row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         frame.rows[i] = row
     end
@@ -307,7 +308,7 @@ end
 function HCM:RefreshManager()
     if not self.Manager then return end
     local frame=self.Manager
-    frame.status:SetText("Sync: "..self:NetworkStatus() .. "  -  " .. table.getn(self.DB.pins) .. " pins")
+    frame.status:SetText(self:NetworkStatus() .. "  -  " .. table.getn(self.DB.pins) .. " pins stored locally")
     local visible = {}; local i
     local query=string.lower(self:Trim(frame.search:GetText(),40));query=string.gsub(query,"(%W)","%%%1")
     local category=frame.categoryValues[frame.categoryIndex];local scope=frame.scopeValues[frame.scopeIndex]

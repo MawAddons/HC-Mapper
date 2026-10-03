@@ -67,15 +67,33 @@ assert(dungeon and dungeon.instance=="TheDeadmines","dungeon pin was rejected")
 local remote={id="peer-1",revision=1,owner="Svenne",scope="Peers",continent=2,zone="Westfall",x=.4,y=.6,instance="",ix=0,iy=0,category="Treasure",title="Chest",note="Behind house",updatedAt=HCM:Now()}
 HCM:HandleNetwork(HCM:PinMessage(remote),"OtherPlayer","PEER")
 assert(HCM:GetPin("peer-1"),"peer pin was not accepted")
-remote.revision=2;remote.note="Moved";HCM:HandleNetwork(HCM:PinMessage(remote),"OtherPlayer","PEER")
+remote.revision=2;remote.note="Moved";HCM:HandleNetwork(HCM:PinMessage(remote),"Svenne","PEER")
 assert(HCM:GetPin("peer-1").note=="Moved","newer peer revision did not replace pin")
 HCM:ApplyDelete("peer-1",3,"Svenne")
 assert(not HCM:GetPin("peer-1") and HCM.DB.tombstones["peer-1"].revision==3,"peer deletion was not applied")
 remote.revision=2;HCM:HandleNetwork(HCM:PinMessage(remote),"OtherPlayer","PEER")
 assert(not HCM:GetPin("peer-1"),"tombstone allowed stale pin resurrection")
 
-assert(HCM:DeletePin(mine.id,1),"owner could not delete local pin")
+assert(HCM:RequestDeletePin(mine.id),"owner delete confirmation was not opened")
+assert(HCM:GetPin(mine.id),"pin was deleted before confirmation")
+assert(HCM:ConfirmDeletePin(),"confirmed owner delete failed")
 local foreign={id="peer-2",revision=1,owner="Another",scope="Peers",continent=2,zone="Westfall",x=.2,y=.2,instance="",category="Note",title="Foreign",note="",updatedAt=HCM:Now()}
 HCM:SavePin(foreign,nil)
 assert(not HCM:DeletePin("peer-2",1),"a player could delete another author's pin")
+assert(not HCM:RequestDeletePin("peer-2"),"foreign pin offered a global delete confirmation")
+
+local protected={id="svenne-2000001000-9",revision=1,owner="Svenne",scope="Peers",continent=2,zone="Westfall",x=.3,y=.3,instance="",category="Note",title="Protected",note="",updatedAt=HCM:Now()}
+HCM:HandleNetwork(HCM:PinMessage(protected),"Relay","PEER")
+HCM:HandleNetwork("HCM1~D~svenne-2000001000-9~2~Svenne~Peers","ToxicPlayer","PEER")
+assert(HCM:GetPin(protected.id),"forged delete removed another player's pin")
+protected.revision=2;protected.note="forged update";HCM:HandleNetwork(HCM:PinMessage(protected),"ToxicPlayer","PEER")
+assert(HCM:GetPin(protected.id).revision==1,"relayed update overwrote an existing owner's pin")
+HCM:HandleNetwork("HCM1~D~svenne-2000001000-9~2~Svenne~Peers","Svenne","PEER")
+assert(not HCM:GetPin(protected.id),"owner-authored delete was not applied")
+
+HCM.Network.queue={};local snapshotStart=HCM.Network.snapshotCursor["P:PEER"]or 0
+local n;for n=1,25 do HCM:SavePin({id="peerdb-"..n,revision=1,owner="Peer"..n,scope="Peers",continent=2,zone="Westfall",x=.1,y=.1,instance="",category="Note",title="Peer pin "..n,note="",updatedAt=HCM:Now()},nil)end
+HCM:QueueSnapshot("PEER");local snapshotAfterFirst=HCM.Network.snapshotCursor["P:PEER"]
+HCM.Network.queue={};HCM:QueueSnapshot("PEER");local snapshotAfterSecond=HCM.Network.snapshotCursor["P:PEER"]
+assert(snapshotAfterFirst~=snapshotStart and snapshotAfterSecond~=snapshotAfterFirst,"automatic snapshots did not rotate through the local database")
 print("HC Mapper smoke test passed")

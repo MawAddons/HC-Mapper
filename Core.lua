@@ -1,7 +1,7 @@
 HCMapper = {}
 
 local HCM = HCMapper
-HCM.VERSION = "0.2.1"
+HCM.VERSION = "0.2.2"
 HCM.PROTOCOL = "HCM1"
 HCM.CHANNEL = "HCMapper"
 HCM.MAX_PINS = 500
@@ -74,7 +74,8 @@ function HCM:InitializeDB()
     HCMapperDB.pins = HCMapperDB.pins or {}
     HCMapperDB.tombstones = HCMapperDB.tombstones or {}
     HCMapperDB.settings = HCMapperDB.settings or {}
-    if HCMapperDB.settings.sync == nil then HCMapperDB.settings.sync = 1 end
+    -- Peer replication is an always-on core function; visibility scopes still control what is shared.
+    HCMapperDB.settings.sync = 1
     if HCMapperDB.settings.showPeer == nil then HCMapperDB.settings.showPeer = 1 end
     if HCMapperDB.settings.showGuild == nil then HCMapperDB.settings.showGuild = 1 end
     if HCMapperDB.settings.showMine == nil then HCMapperDB.settings.showMine = 1 end
@@ -174,16 +175,44 @@ function HCM:DeletePin(id, broadcast)
     return 1
 end
 
-function HCM:ApplyDelete(id, revision, owner)
+function HCM:RequestDeletePin(id)
+    local pin = self:GetPin(id)
+    if not pin then return nil end
+    if self:NormalizeName(pin.owner) ~= self:NormalizeName(self:PlayerName()) then
+        self:Print("only " .. pin.owner .. " can delete this shared pin")
+        return nil
+    end
+    self.PendingDeleteID = id
+    if StaticPopup_Show then StaticPopup_Show("HC_MAPPER_CONFIRM_DELETE", pin.title or "this pin") end
+    return 1
+end
+
+function HCM:ConfirmDeletePin()
+    local id = self.PendingDeleteID
+    self.PendingDeleteID = nil
+    if not id then return nil end
+    return self:DeletePin(id, 1)
+end
+
+function HCM:ApplyDelete(id, revision, owner, scope)
     id, owner, revision = Trim(id, 72), Trim(owner, 64), tonumber(revision)
     if id == "" or owner == "" or not revision then return nil end
     local pin, index = self:GetPin(id)
+    if pin and self:NormalizeName(pin.owner) ~= self:NormalizeName(owner) then return nil end
     if pin and self:NormalizeName(pin.owner) == self:NormalizeName(owner) and revision > (tonumber(pin.revision) or 0) then table.remove(self.DB.pins, index) end
     local old = self.DB.tombstones[id]
-    if not old or revision > (tonumber(old.revision) or 0) then self.DB.tombstones[id] = { revision = revision, owner = owner, at = self:Now() } end
+    if not old or revision > (tonumber(old.revision) or 0) then self.DB.tombstones[id] = { revision = revision, owner = owner, at = self:Now(), scope = scope or (old and old.scope) or "Peers" } end
     self:RefreshAll()
     return 1
 end
+
+StaticPopupDialogs = StaticPopupDialogs or {}
+StaticPopupDialogs["HC_MAPPER_CONFIRM_DELETE"] = {
+    text = "Delete map pin '%s'?\nThis removes it from every synced local database.",
+    button1 = YES or "Yes", button2 = NO or "No", timeout = 0, whileDead = 1, hideOnEscape = 1,
+    OnAccept = function() HCM:ConfirmDeletePin() end,
+    OnCancel = function() HCM.PendingDeleteID = nil end,
+}
 
 function HCM:VisiblePin(pin)
     local mine = self:NormalizeName(pin.owner) == self:NormalizeName(self:PlayerName())
@@ -225,7 +254,6 @@ SlashCmdList.HCMAPPER = function(message)
     message = string.lower(Trim(message, 30))
     if message == "map" and ToggleWorldMap then ToggleWorldMap()
     elseif message == "dungeon" and HCM.OpenDashboard then HCM:OpenDashboard("Dungeon")
-    elseif message == "sync" and HCM.RequestSync then HCM:RequestSync()
     elseif message == "reset" then HCMapperDB.window = nil; HCMapperDB.dungeonWindow = nil; HCM:Print("window positions reset")
     elseif HCM.ToggleManager then HCM:ToggleManager() end
 end

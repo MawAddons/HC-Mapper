@@ -15,7 +15,7 @@ function HCM:CreateMapPin(parent)
     button:SetScript("OnEnter", function() if this.pin then HCM:ShowPinTooltip(this, this.pin) end end)
     button:SetScript("OnLeave", function() GameTooltip:Hide() end)
     button:SetScript("OnClick", function()
-        if this.pin and arg1 == "RightButton" and IsShiftKeyDown() then HCM:DeletePin(this.pin.id, 1) end
+        if this.pin and arg1 == "RightButton" and IsShiftKeyDown() then HCM:RequestDeletePin(this.pin.id) end
     end)
     button:SetScript("OnDragStart", function() if HCM.BeginPinDrag then HCM:BeginPinDrag(this) end end)
     button:SetScript("OnDragStop", function() if HCM.EndPinDrag then HCM:EndPinDrag(this) end end)

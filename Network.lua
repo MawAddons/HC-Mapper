@@ -25,7 +25,7 @@ local function Unescape(value)
 end
 
 function HCM:InitializeNetwork()
-    self.Network = { queue = {}, sent = {}, seen = {}, receive = {}, state = "OFFLINE", nextQuery = GetTime() + 8 }
+    self.Network = { queue = {}, sent = {}, seen = {}, receive = {}, snapshotCursor = {}, state = "OFFLINE", nextQuery = GetTime() + 8 }
     if RegisterAddonMessagePrefix then RegisterAddonMessagePrefix("HCMapper") end
 end
 
@@ -83,7 +83,7 @@ function HCM:SharePin(pin, delay)
 end
 
 function HCM:ShareDelete(id, revision, owner, scope)
-    local message = table.concat({ self.PROTOCOL, "D", Escape(id), tostring(revision), Escape(owner) }, "~")
+    local message = table.concat({ self.PROTOCOL, "D", Escape(id), tostring(revision), Escape(owner), Escape(scope or "Peers") }, "~")
     self:QueueNetwork(message, scope == "Guild" and "GUILD" or "PEER", "delete:" .. id)
 end
 
@@ -97,18 +97,37 @@ end
 
 function HCM:QueueSnapshot(mode)
     local delay = math.random(2, 10)
-    local count = 0
-    local i
-    for i = table.getn(self.DB.pins), 1, -1 do
-        local pin = self.DB.pins[i]
-        local mine = self:NormalizeName(pin.owner) == self:NormalizeName(self:PlayerName())
-        local eligible = mode == "GUILD" and pin.scope == "Guild" or mode == "PEER" and pin.scope == "Peers"
-        if eligible and (mine or count < 10) then
-            local message = self:PinMessage(pin)
-            if message then self:QueueNetwork(message, mode, "snapshot:" .. mode .. ":" .. pin.id, GetTime() + delay); delay = delay + self.SEND_DELAY; count = count + 1 end
-        end
-        if count >= 20 then break end
+    local owner = self:NormalizeName(self:PlayerName())
+    local deletes, pins = {}, {}
+    local id, tombstone, i
+    for id, tombstone in pairs(self.DB.tombstones) do
+        local eligible = mode == "GUILD" and tombstone.scope == "Guild" or mode == "PEER" and tombstone.scope ~= "Guild"
+        if eligible and self:NormalizeName(tombstone.owner) == owner then table.insert(deletes, { id=id, data=tombstone }) end
     end
+    for i = 1, table.getn(self.DB.pins) do
+        local pin = self.DB.pins[i]
+        local eligible = mode == "GUILD" and pin.scope == "Guild" or mode == "PEER" and pin.scope == "Peers"
+        if eligible then table.insert(pins, pin) end
+    end
+    local function QueueRotating(list, limit, cursorKey, isDelete)
+        local total = table.getn(list)
+        if total == 0 then return 0 end
+        local cursor = tonumber(HCM.Network.snapshotCursor[cursorKey]) or 0
+        local sent = 0
+        while sent < limit and sent < total do
+            cursor = cursor + 1; if cursor > total then cursor = 1 end
+            local entry = list[cursor]; local message; local key
+            if isDelete then
+                message = table.concat({ HCM.PROTOCOL, "D", Escape(entry.id), tostring(entry.data.revision), Escape(entry.data.owner), Escape(entry.data.scope or "Peers") }, "~")
+                key = "snapshot-delete:" .. mode .. ":" .. entry.id
+            else message = HCM:PinMessage(entry); key = "snapshot-pin:" .. mode .. ":" .. entry.id end
+            if message then HCM:QueueNetwork(message, mode, key, GetTime() + delay); delay = delay + HCM.SEND_DELAY; sent = sent + 1 end
+        end
+        HCM.Network.snapshotCursor[cursorKey] = cursor
+        return sent
+    end
+    local deleted = QueueRotating(deletes, 5, "D:" .. mode, 1)
+    QueueRotating(pins, 20 - deleted, "P:" .. mode, nil)
 end
 
 function HCM:AllowedSender(sender)
@@ -128,14 +147,21 @@ function HCM:HandleNetwork(message, sender, mode)
     local fields = Split(message, "~")
     if fields[1] ~= self.PROTOCOL then return end
     if fields[2] == "Q" then self:QueueSnapshot(mode); return end
-    if fields[2] == "D" then self:ApplyDelete(Unescape(fields[3]), tonumber(fields[4]), Unescape(fields[5])); return end
+    if fields[2] == "D" then
+        local owner = Unescape(fields[5])
+        if self:NormalizeName(sender) ~= self:NormalizeName(owner) then return end
+        self:ApplyDelete(Unescape(fields[3]), tonumber(fields[4]), owner, Unescape(fields[6])); return
+    end
     if fields[2] ~= "P" or table.getn(fields) < 17 then return end
     local id = Unescape(fields[3])
     local revision = tonumber(fields[4])
+    local messageOwner = Unescape(fields[5])
+    local current = self:GetPin(id)
+    if current and revision and revision > (tonumber(current.revision) or 0) and self:NormalizeName(sender) ~= self:NormalizeName(messageOwner) then return end
     local tombstone = self.DB.tombstones[id]
     if tombstone and (tonumber(tombstone.revision) or 0) >= (revision or 0) then return end
     local pin = {
-        id = id, revision = revision, owner = Unescape(fields[5]), scope = fields[6], continent = tonumber(fields[7]),
+        id = id, revision = revision, owner = messageOwner, scope = fields[6], continent = tonumber(fields[7]),
         zone = Unescape(fields[8]), x = tonumber(fields[9]), y = tonumber(fields[10]), instance = Unescape(fields[11]),
         ix = tonumber(fields[12]), iy = tonumber(fields[13]), category = Unescape(fields[14]), title = Unescape(fields[15]),
         note = Unescape(fields[16]), updatedAt = self:Now() - math.max(0, math.min(self.PEER_TTL, tonumber(fields[17]) or 0)),

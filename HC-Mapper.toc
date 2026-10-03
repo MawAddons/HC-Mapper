@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
-## Notes: v0.2.1: Lua 5.0 dashboard compatibility and reliable pin tooltips
+## Notes: v0.2.2: automatic replicated pin database with protected confirmed deletion
 ## Author: MawAddons
-## Version: 0.2.1
+## Version: 0.2.2
 ## SavedVariables: HCMapperDB
 
 Core.lua
