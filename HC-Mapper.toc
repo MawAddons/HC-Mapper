@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
-## Notes: v0.5.1: Add Pin no longer changes the selected map zone
+## Notes: v0.5.2: reliable map toolbar clicks and version tooltip
 ## Author: MawAddons
-## Version: 0.5.1
+## Version: 0.5.2
 ## SavedVariables: HCMapperDB
 
 Core.lua

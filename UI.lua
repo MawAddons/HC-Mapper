@@ -553,7 +553,7 @@ function HCM:CreateMinimapButton()
         HCMapperDB.minimapAngle = angle
         HCM:PositionMinimapButton()
     end)
-    button:SetScript("OnEnter", function() GameTooltip:SetOwner(this,"ANCHOR_LEFT"); GameTooltip:AddLine("HC Mapper"); GameTooltip:AddLine("Left-click: standard World Map",1,1,1);GameTooltip:AddLine("Right-click: World Map with pin list",1,1,1); GameTooltip:Show() end)
+    button:SetScript("OnEnter", function() GameTooltip:SetOwner(this,"ANCHOR_LEFT"); GameTooltip:AddLine("HC Mapper v"..HCM.VERSION); GameTooltip:AddLine("Left-click: standard World Map",1,1,1);GameTooltip:AddLine("Right-click: World Map with pin list",1,1,1); GameTooltip:Show() end)
     button:SetScript("OnLeave", function() GameTooltip:Hide() end)
     self.MinimapButton = button
     self:PositionMinimapButton()
