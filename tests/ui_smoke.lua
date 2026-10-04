@@ -32,13 +32,15 @@ function GetNumMapOverlays()if mapZone>0 then return 1 end;return 0 end;function
 function GetNumRaidMembers()return 0 end;function GetNumPartyMembers()return 1 end
 function GetPlayerMapPosition(unit)if unit=="player"then return.5,.5 elseif unit=="party1"then return.6,.6 end;return 0,0 end
 function GetCursorPosition()return 500,400 end;function GetChannelName()return 7 end;function JoinChannelByName()end;function getglobal()return nil end
-function SendChatMessage()end;function SendAddonMessage()end;function RegisterAddonMessagePrefix()end;function IsShiftKeyDown()return nil end;function ToggleWorldMap()WorldMapFrame:Show()end
+function SendChatMessage()end;function SendAddonMessage()end;function RegisterAddonMessagePrefix()end;function IsShiftKeyDown()return nil end;function ToggleWorldMap()if WorldMapFrame:IsShown()then WorldMapFrame:Hide()else WorldMapFrame:Show()end end
 
 dofile("HC-Mapper/Core.lua");assert(HCMapper.ShowPinTooltip,"pin tooltip must be available from Core");dofile("HC-Mapper/MapData.lua");dofile("HC-Mapper/Network.lua");dofile("HC-Mapper/UI.lua");dofile("HC-Mapper/WorldMap.lua");dofile("HC-Mapper/Dungeon.lua")
 local HCM=HCMapper;HCM:InitializeDB();HCM:InitializeNetwork();HCM:InitializeUI();HCM:InitializeWorldMap()
 assert(HCM.Manager and HCM.Editor and HCM.MinimapButton,"main UI did not initialize")
 assert(table.getn(HCM.PinIcons)==25 and table.getn(HCM.Editor.iconChoices)==25,"25 pin icons were not exposed in the editor")
-assert(HCM.WorldAdd and table.getn(HCM.WorldPins)==120,"World Map controls did not initialize")
+assert(HCM.WorldAdd and HCM.WorldPinsButton and table.getn(HCM.WorldPins)==120,"World Map controls did not initialize")
+assert(WorldMapFrame:GetWidth()==1000 and WorldMapFrame:GetHeight()==700,"HC Mapper resized the standard World Map")
+WorldMapFrame:Hide();this=HCM.MinimapButton;arg1="LeftButton";HCM.MinimapButton.scripts.OnClick();assert(WorldMapFrame:IsShown()and not HCM.Manager:IsShown(),"minimap left-click did not open the standard World Map");arg1=nil
 HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.4,y=.5,instance=""});HCM.Editor.name:SetText("Road patrol")
 assert(HCM.Editor.strata=="FULLSCREEN_DIALOG"and HCM.Editor:GetFrameLevel()>HCM.Manager:GetFrameLevel()and HCM.Editor.raised,"pin editor was not raised above the map")
 this=HCM.Editor.iconChoices[4];HCM.Editor.iconChoices[4].scripts.OnClick();assert(HCM.Editor.iconIndex==4,"icon palette did not select the bank icon")
@@ -57,7 +59,7 @@ HCM:SetDashboardMode("World");assert(HCM.Manager.mode=="World"and mapContinent==
 this=HCM.Manager.map;arg1="LeftButton";HCM.Manager.map.scripts.OnClick();assert(HCM.Manager.mode=="Continent"and mapContinent==2 and mapZone==0,"world map click did not navigate to a continent")
 HCM.Manager.map.scripts.OnClick();assert(HCM.Manager.mode=="Zone"and mapZone==1 and HCM.Manager.explorationCount>0,"continent click did not navigate to the discovered zone map")
 arg1="RightButton";HCM.Manager.map.scripts.OnClick();assert(HCM.Manager.mode=="Continent"and mapZone==0,"right-click did not navigate back");HCM:SetDashboardMode("Zone");arg1=nil
-local clickable=HCM.Manager.mapPins[1];this=clickable;arg1="LeftButton";clickable.scripts.OnClick();assert(HCM.Manager.mode=="Zone"and mapContinent==2 and mapZone==1,"clicking an outdoor pin did not open its zone map")
+WorldMapFrame:Hide();local clickable=HCM.Manager.mapPins[1];this=clickable;arg1="LeftButton";clickable.scripts.OnClick();assert(WorldMapFrame:IsShown()and not HCM.Manager:IsShown()and mapContinent==2 and mapZone==1,"clicking an outdoor pin did not open its zone in the standard World Map")
 HCM:GoToPin(HCM.DB.pins[2]);assert(HCM.Manager.mode=="Dungeon"and HCM.Manager.dungeonKey=="TheDeadmines","clicking a dungeon pin did not open its dungeon map");HCM:SetDashboardMode("Zone");arg1=nil
 this=HCM.Manager.mapPins[1];HCM.Manager.mapPins[1].scripts.OnEnter();HCM.Manager.mapPins[1].scripts.OnLeave()
 this=HCM.Manager.titlebar;HCM.Manager.titlebar.scripts.OnDragStart();assert(HCM.Manager.moving,"titlebar did not start window drag");HCM.Manager.titlebar.scripts.OnDragStop();assert(not HCM.Manager.moving,"titlebar did not stop window drag")

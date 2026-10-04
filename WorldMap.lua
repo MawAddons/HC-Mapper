@@ -53,6 +53,24 @@ function HCM:RefreshWorldPins()
         local level = targetZone ~= "" and targetZone or (targetContinent > 0 and (targetContinent == 1 and "Kalimdor" or "Eastern Kingdoms") or "Azeroth")
         self.WorldStatus:SetText("HC Mapper - " .. level .. " - " .. table.getn(visible) .. " pin(s)")
     end
+    if self.WorldPinsButton then self.WorldPinsButton:SetText("Pins ("..table.getn(visible)..")")end
+end
+
+function HCM:ToggleNativeMap()
+    if not WorldMapFrame or not ToggleWorldMap then return end
+    if self.Manager and self.Manager:IsShown()then self.Manager:Hide()end
+    ToggleWorldMap()
+    if WorldMapFrame:IsShown()then self:RefreshWorldPins()end
+end
+
+function HCM:OpenNativePin(pin)
+    if not pin or not WorldMapFrame or not ToggleWorldMap then return end
+    if self.Manager and self.Manager:IsShown()then self.Manager:Hide()end
+    if not WorldMapFrame:IsShown()then ToggleWorldMap()end
+    local zoneIndex=self:FindZoneIndex(pin.continent,pin.zone)
+    if zoneIndex and SetMapZoom then SetMapZoom(pin.continent,zoneIndex)
+    elseif SetMapZoom then SetMapZoom(pin.continent);self:Print("zone map not found; showing its continent")end
+    self:RefreshWorldPins()
 end
 
 function HCM:BeginWorldPin()
@@ -89,8 +107,9 @@ function HCM:InitializeWorldMap()
     self.WorldDungeon = Button(WorldMapFrame, "Dungeons", 90)
     self.WorldDungeon:SetPoint("RIGHT", self.WorldAdd, "LEFT", -6, 0)
     self.WorldDungeon:SetScript("OnClick", function() HCM:OpenDungeonBrowser() end)
-    self.WorldStatus = WorldMapFrame:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
-    self.WorldStatus:SetPoint("BOTTOM",WorldMapFrame,"BOTTOM",0,12)
+    self.WorldPinsButton = Button(WorldMapFrame, "Pins", 90)
+    self.WorldPinsButton:SetPoint("RIGHT", self.WorldDungeon, "LEFT", -6, 0)
+    self.WorldPinsButton:SetScript("OnClick",function()HCM:ToggleManager()end)
     local originalClick = WorldMapButton:GetScript("OnClick")
     WorldMapButton:SetScript("OnClick", function()
         if HCM.WorldAddMode then HCM:WorldMapClick() elseif originalClick then originalClick() end

@@ -1,4 +1,4 @@
-# HC Mapper 0.4.0
+# HC Mapper 0.4.1
 
 HC Mapper is a lightweight map pin addon for World of Warcraft 1.12.1. Players can create
 pins on zone maps or included Vanilla dungeon maps and automatically exchange shared pins
@@ -27,11 +27,12 @@ with nearby peers using a hidden, rate-limited channel.
 - Choose from a 25-icon palette including question, danger, information, bank, crossed swords, herbs, professions, travel, and dungeon symbols.
 - Your position and current party or raid members are shown live on outdoor dashboard maps.
 - The New Pin editor is a modal dialog above the map, so creating a pin always gives immediate visual feedback.
+- The minimap icon and `/hcm` now open Blizzard's standard World Map at its native size and position; HC Mapper only adds pins and compact controls on top.
 
 ## Controls
 
-- `/hcm` opens the manager.
-- `/hcm map` opens the World Map.
+- `/hcm` and `/hcm map` open the standard World Map.
+- `/hcm pins` opens the separate pin manager.
 - `/hcm dungeon` opens the dungeon browser.
 - On a zone map, click **Add Pin**, then click the map.
 - In the dungeon browser, choose a map, click **Add Pin**, then click the map.

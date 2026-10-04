@@ -1,7 +1,7 @@
 HCMapper = {}
 
 local HCM = HCMapper
-HCM.VERSION = "0.4.0"
+HCM.VERSION = "0.4.1"
 HCM.PROTOCOL = "HCM1"
 HCM.CHANNEL = "HCMapper"
 HCM.MAX_PINS = 500
@@ -294,10 +294,11 @@ SLASH_HCMAPPER1 = "/hcm"
 SLASH_HCMAPPER2 = "/hcmapper"
 SlashCmdList.HCMAPPER = function(message)
     message = string.lower(Trim(message, 30))
-    if message == "map" and ToggleWorldMap then ToggleWorldMap()
+    if message == "map" and HCM.ToggleNativeMap then HCM:ToggleNativeMap()
+    elseif message == "pins" and HCM.ToggleManager then HCM:ToggleManager()
     elseif message == "dungeon" and HCM.OpenDashboard then HCM:OpenDashboard("Dungeon")
     elseif message == "reset" then HCMapperDB.window = nil; HCMapperDB.dungeonWindow = nil; HCM:Print("window positions reset")
-    elseif HCM.ToggleManager then HCM:ToggleManager() end
+    elseif HCM.ToggleNativeMap then HCM:ToggleNativeMap() end
 end
 
 local events = CreateFrame("Frame")
