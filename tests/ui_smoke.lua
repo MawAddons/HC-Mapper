@@ -6,7 +6,7 @@ function methods:SetScript(k,v)self.scripts[k]=v end
 function methods:GetScript(k)return self.scripts[k]end
 function methods:RegisterEvent()end;function methods:RegisterForClicks()end;function methods:RegisterForDrag()end
 function methods:SetWidth(v)self.width=v end;function methods:SetHeight(v)self.height=v end;function methods:GetWidth()return self.width end;function methods:GetHeight()return self.height end
-function methods:SetPoint()end;function methods:SetAllPoints()end;function methods:ClearAllPoints()end;function methods:SetFrameStrata(v)self.strata=v end;function methods:SetFrameLevel(v)self.level=v end;function methods:GetFrameLevel()return self.level or 1 end;function methods:Raise()self.raised=true end
+function methods:SetPoint(point,relativeTo,relativePoint,x,y)self.point={point,relativeTo,relativePoint,x,y}end;function methods:SetAllPoints()end;function methods:ClearAllPoints()self.point=nil end;function methods:SetFrameStrata(v)self.strata=v end;function methods:SetFrameLevel(v)self.level=v end;function methods:GetFrameLevel()return self.level or 1 end;function methods:Raise()self.raised=true end
 function methods:SetBackdrop()end;function methods:SetBackdropColor()end;function methods:SetTexture(v)self.texture=v end;function methods:SetVertexColor()end;function methods:SetBlendMode()end
 function methods:SetText(v)self.text=v or"" end;function methods:GetText()return self.text end;function methods:SetFontObject()end;function methods:SetTextInsets()end;function methods:SetAutoFocus()end;function methods:SetMultiLine()end;function methods:SetFocus()end;function methods:ClearFocus()end
 function methods:SetJustifyH()end;function methods:SetOwner()end;function methods:AddLine()end;function methods:EnableMouse()end;function methods:SetMovable()end;function methods:SetHighlightTexture()end
@@ -40,6 +40,7 @@ assert(HCM.Manager and HCM.Editor and HCM.MinimapButton,"main UI did not initial
 assert(table.getn(HCM.PinIcons)==25 and table.getn(HCM.Editor.iconChoices)==25,"25 pin icons were not exposed in the editor")
 assert(HCM.WorldAdd and HCM.WorldPinsButton and table.getn(HCM.WorldPins)==120,"World Map controls did not initialize")
 assert(WorldMapFrame:GetWidth()==1000 and WorldMapFrame:GetHeight()==700,"HC Mapper resized the standard World Map")
+assert(HCM.WorldAdd.point and HCM.WorldAdd.point[1]=="BOTTOMRIGHT"and HCM.WorldAdd.point[2]==WorldMapButton,"HC Mapper controls overlap the standard top navigation")
 WorldMapFrame:Hide();this=HCM.MinimapButton;arg1="LeftButton";HCM.MinimapButton.scripts.OnClick();assert(WorldMapFrame:IsShown()and not HCM.Manager:IsShown(),"minimap left-click did not open the standard World Map");arg1=nil
 HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.2,y=.3,instance=""});this=HCM.Editor.close;HCM.Editor.close.scripts.OnClick();assert(not HCM.Editor:IsShown()and not HCM.Editor.pending,"pin editor X did not close and clean up")
 HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.2,y=.3,instance=""});this=HCM.Editor.cancel;HCM.Editor.cancel.scripts.OnClick();assert(not HCM.Editor:IsShown()and not HCM.Editor.pending,"pin editor Cancel did not close and clean up")

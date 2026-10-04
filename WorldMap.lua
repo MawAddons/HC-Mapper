@@ -100,14 +100,17 @@ function HCM:InitializeWorldMap()
     local i
     for i=1,120 do self.WorldPins[i]=self:CreateMapPin(self.WorldOverlay); self.WorldPins[i].mapKind="world"; self.WorldPins[i]:Hide() end
     self.WorldAdd = Button(WorldMapFrame, "Add Pin", 90)
-    self.WorldAdd:SetPoint("TOPRIGHT", WorldMapFrame, "TOPRIGHT", -145, -6)
+    self.WorldAdd:SetWidth(116)
+    self.WorldAdd:SetPoint("BOTTOMRIGHT", WorldMapButton, "BOTTOMRIGHT", -18, 18)
     self.WorldAdd:SetScript("OnClick", function()
         if HCM.WorldAddMode then HCM.WorldAddMode=nil; HCM.WorldAdd:SetText("Add Pin") else HCM:BeginWorldPin() end
     end)
     self.WorldDungeon = Button(WorldMapFrame, "Dungeons", 90)
+    self.WorldDungeon:SetWidth(116)
     self.WorldDungeon:SetPoint("RIGHT", self.WorldAdd, "LEFT", -6, 0)
     self.WorldDungeon:SetScript("OnClick", function() HCM:OpenDungeonBrowser() end)
     self.WorldPinsButton = Button(WorldMapFrame, "Pins", 90)
+    self.WorldPinsButton:SetWidth(116)
     self.WorldPinsButton:SetPoint("RIGHT", self.WorldDungeon, "LEFT", -6, 0)
     self.WorldPinsButton:SetScript("OnClick",function()HCM:ToggleManager()end)
     local originalClick = WorldMapButton:GetScript("OnClick")

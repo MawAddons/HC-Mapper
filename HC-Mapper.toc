@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
-## Notes: v0.4.2: reliable X, Cancel, and Escape handling in the pin editor
+## Notes: v0.4.3: non-overlapping World Map control toolbar
 ## Author: MawAddons
-## Version: 0.4.2
+## Version: 0.4.3
 ## SavedVariables: HCMapperDB
 
 Core.lua
