@@ -124,6 +124,28 @@ function HCM:ClosePinEditor()
     self.Editor.pending=nil;self.Editor:Hide()
 end
 
+function HCM:CreateDeleteConfirm()
+    if self.DeleteConfirm then return self.DeleteConfirm end
+    local frame=Panel("HCMapperDeleteConfirm",390,170);frame:SetFrameStrata("FULLSCREEN_DIALOG");frame:SetFrameLevel(200);frame:SetPoint("CENTER",UIParent,"CENTER",0,40)
+    frame.title=Text(frame,"Delete Map Pin?","GameFontNormalLarge");frame.title:SetPoint("TOP",frame,"TOP",0,-20)
+    frame.message=Text(frame,"","GameFontHighlight");frame.message:SetPoint("TOP",frame.title,"BOTTOM",0,-18);frame.message:SetWidth(340);frame.message:SetJustifyH("CENTER")
+    frame.close=CreateFrame("Button",nil,frame,"UIPanelCloseButton");frame.close:SetWidth(32);frame.close:SetHeight(32);frame.close:SetPoint("TOPRIGHT",frame,"TOPRIGHT",-8,-8)
+    frame.cancel=Button(frame,"Cancel",105,28);frame.cancel:SetPoint("BOTTOMRIGHT",frame,"BOTTOMRIGHT",-22,18)
+    frame.accept=Button(frame,"Delete",105,28);frame.accept:SetPoint("RIGHT",frame.cancel,"LEFT",-10,0)
+    local function CancelDelete()HCM.PendingDeleteID=nil;frame:Hide()end
+    frame.close:SetScript("OnClick",CancelDelete);frame.cancel:SetScript("OnClick",CancelDelete)
+    frame.accept:SetScript("OnClick",function()HCM:ConfirmDeletePin();frame:Hide()end)
+    frame:SetScript("OnHide",function()if frame.accepting~=1 then HCM.PendingDeleteID=nil end;frame.accepting=nil end)
+    if UISpecialFrames then table.insert(UISpecialFrames,"HCMapperDeleteConfirm")end
+    frame:Hide();self.DeleteConfirm=frame;return frame
+end
+
+function HCM:ShowDeleteConfirm(pin)
+    local frame=self:CreateDeleteConfirm();frame.message:SetText("Delete '"..tostring(pin and pin.title or"this pin").."'?\nThis removes it from every synced local database.")
+    local level=200;if self.WorldPinPanel and self.WorldPinPanel:GetFrameLevel()>=level then level=self.WorldPinPanel:GetFrameLevel()+50 end
+    frame:SetFrameLevel(level);frame:Show();if frame.Raise then frame:Raise()end
+end
+
 function HCM:OpenPinEditor(data)
     local frame = self:CreateEditor()
     frame.pending = data

@@ -1,7 +1,7 @@
 HCMapper = {}
 
 local HCM = HCMapper
-HCM.VERSION = "0.5.2"
+HCM.VERSION = "0.5.3"
 HCM.PROTOCOL = "HCM1"
 HCM.CHANNEL = "HCMapper"
 HCM.MAX_PINS = 500
@@ -225,7 +225,11 @@ function HCM:RequestDeletePin(id)
         return nil
     end
     self.PendingDeleteID = id
-    if StaticPopup_Show then StaticPopup_Show("HC_MAPPER_CONFIRM_DELETE", pin.title or "this pin") end
+    if self.ShowDeleteConfirm then self:ShowDeleteConfirm(pin)
+    elseif StaticPopup_Show then
+        local popup=StaticPopup_Show("HC_MAPPER_CONFIRM_DELETE",pin.title or"this pin")
+        if popup then popup:SetFrameStrata("FULLSCREEN_DIALOG");popup:SetFrameLevel(200);if popup.Raise then popup:Raise()end end
+    end
     return 1
 end
 

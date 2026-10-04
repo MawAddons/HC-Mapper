@@ -33,7 +33,8 @@ function GetNumMapOverlays()if mapZone>0 then return 1 end;return 0 end;function
 function GetNumRaidMembers()return 0 end;function GetNumPartyMembers()return 1 end
 function GetPlayerMapPosition(unit)if unit=="player"then return.5,.5 elseif unit=="party1"then return.6,.6 end;return 0,0 end
 function GetCursorPosition()return 500,400 end;function GetChannelName()return 7 end;function JoinChannelByName()end;function getglobal()return nil end
-function SendChatMessage()end;function SendAddonMessage()end;function RegisterAddonMessagePrefix()end;function IsShiftKeyDown()return nil end;function ToggleWorldMap()if WorldMapFrame:IsShown()then WorldMapFrame:Hide()else WorldMapFrame:Show()end end
+local shiftDown=nil
+function SendChatMessage()end;function SendAddonMessage()end;function RegisterAddonMessagePrefix()end;function IsShiftKeyDown()return shiftDown end;function ToggleWorldMap()if WorldMapFrame:IsShown()then WorldMapFrame:Hide()else WorldMapFrame:Show()end end
 
 dofile("HC-Mapper/Core.lua");assert(HCMapper.ShowPinTooltip,"pin tooltip must be available from Core");dofile("HC-Mapper/MapData.lua");dofile("HC-Mapper/Network.lua");dofile("HC-Mapper/UI.lua");dofile("HC-Mapper/WorldMap.lua");dofile("HC-Mapper/Dungeon.lua")
 local HCM=HCMapper;HCM:InitializeDB();HCM:InitializeNetwork();HCM:InitializeUI();HCM:InitializeWorldMap()
@@ -47,7 +48,7 @@ assert(HCM.WorldPinPanel.parent==WorldMapFrame and HCM.WorldPinPanel.point[2]==W
 local beforeContinent,beforeZone,beforeZoomCalls=mapContinent,mapZone,zoomCalls;assert(HCM:FindZoneIndex(2,"Duskwood")==2,"read-only zone lookup did not find Duskwood");assert(mapContinent==beforeContinent and mapZone==beforeZone and zoomCalls==beforeZoomCalls,"zone lookup changed the displayed map")
 mapContinent,mapZone=2,2;this=HCM.WorldAdd;HCM.WorldAdd.scripts.OnClick();assert(HCM.WorldAddMode and mapContinent==2 and mapZone==2,"Add Pin changed Duskwood to another zone");HCM.WorldAdd.scripts.OnClick();mapContinent,mapZone=2,1
 WorldMapFrame:Hide();this=HCM.MinimapButton;arg1="LeftButton";HCM.MinimapButton.scripts.OnClick();assert(WorldMapFrame:IsShown()and not HCM.Manager,"minimap left-click did not open the standard World Map");arg1=nil
-GameTooltip.lines={};this=HCM.MinimapButton;HCM.MinimapButton.scripts.OnEnter();assert(GameTooltip.lines[1]=="HC Mapper v0.5.2","minimap tooltip does not show the addon version");HCM.MinimapButton.scripts.OnLeave()
+GameTooltip.lines={};this=HCM.MinimapButton;HCM.MinimapButton.scripts.OnEnter();assert(GameTooltip.lines[1]=="HC Mapper v0.5.3","minimap tooltip does not show the addon version");HCM.MinimapButton.scripts.OnLeave()
 this=HCM.WorldPinsButton;HCM.WorldPinsButton.scripts.OnClick();assert(HCM.WorldPinPanel:IsShown(),"Pins toolbar button was not clickable");HCM.WorldPinsButton.scripts.OnClick();assert(not HCM.WorldPinPanel:IsShown(),"Pins toolbar button did not toggle the panel")
 this=HCM.MinimapButton;arg1="RightButton";HCM.MinimapButton.scripts.OnClick();assert(WorldMapFrame:IsShown()and HCM.WorldPinPanel:IsShown()and not HCM.Manager,"minimap right-click did not open the integrated pin manager");this=HCM.WorldPinPanel.close;HCM.WorldPinPanel.close.scripts.OnClick();assert(not HCM.WorldPinPanel:IsShown(),"integrated pin manager did not close");arg1=nil
 WorldMapFrame:Hide();SlashCmdList.HCMAPPER("pins");assert(WorldMapFrame:IsShown()and HCM.WorldPinPanel:IsShown(),"/hcm pins did not open the standard map and integrated pin manager");HCM.WorldPinPanel:Hide()
@@ -63,7 +64,8 @@ HCM:RefreshWorldPins();assert(HCM.WorldPins[1].pin and HCM.WorldPins[1].pin.titl
 HCM:OpenDungeonBrowser("TheDeadmines");assert(HCM.DungeonFrame and HCM.DungeonFrame.map.texture.texture=="Interface\\AddOns\\HC-Mapper\\Media\\Maps\\TheDeadmines","dungeon texture was not selected")
 HCM:OpenPinEditor({continent=0,zone="",x=0,y=0,instance="TheDeadmines",ix=.3,iy=.4});HCM.Editor.name:SetText("Boss corner");this=HCM.Editor.save;HCM.Editor.save.scripts.OnClick()
 HCM:RefreshDungeonPins();assert(HCM.DungeonFrame.pins[1].pin and HCM.DungeonFrame.pins[1].pin.instance=="TheDeadmines","dungeon pin was not drawn")
-HCM.WorldPinPanel:Show();HCM:RefreshWorldPinPanel();assert(HCM.WorldPinPanel.rows[1].pin and HCM.WorldPinPanel.rows[2].pin,"integrated pin list did not show saved pins");HCM.WorldPinPanel:Hide()
+HCM.WorldPinPanel:Show();HCM:RefreshWorldPinPanel();assert(HCM.WorldPinPanel.rows[1].pin and HCM.WorldPinPanel.rows[2].pin,"integrated pin list did not show saved pins")
+local deletePin=HCM.WorldPinPanel.rows[1].pin;shiftDown=1;arg1="RightButton";this=HCM.WorldPinPanel.rows[1];HCM.WorldPinPanel.rows[1].scripts.OnClick();assert(HCM.DeleteConfirm and HCM.DeleteConfirm:IsShown()and HCM.DeleteConfirm:GetFrameLevel()>HCM.WorldPinPanel:GetFrameLevel(),"delete confirmation appeared behind the pin manager");this=HCM.DeleteConfirm.cancel;HCM.DeleteConfirm.cancel.scripts.OnClick();assert(not HCM.DeleteConfirm:IsShown()and not HCM.PendingDeleteID and HCM:GetPin(deletePin.id),"delete cancellation did not preserve the pin");shiftDown=nil;arg1=nil;HCM.WorldPinPanel:Hide()
 HCM:CreateManager()
 HCM:RefreshManager();assert(HCM.Manager.rows[1].pin,"manager did not list pins")
 HCM.Manager:Show();HCM:SetDashboardMode("Zone");HCM:RefreshManager()
