@@ -508,6 +508,7 @@ end
 function HCM:GoToPin(pin)
     if not pin then return end
     if pin.instance and pin.instance~=""then
+        if WorldMapFrame and WorldMapFrame:IsShown()and ToggleWorldMap then ToggleWorldMap()end
         local frame=self:CreateManager();frame:Show()
         frame.dungeonKey=pin.instance;frame.mode="Dungeon";self:RefreshDashboardMap();self:RefreshManager();return
     end
@@ -528,7 +529,7 @@ function HCM:CreateMinimapButton()
     local border = button:CreateTexture(nil, "OVERLAY"); border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder"); border:SetWidth(53); border:SetHeight(53); border:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:RegisterForDrag("LeftButton")
-    button:SetScript("OnClick", function() if arg1 == "RightButton" then HCM:ToggleManager() else HCM:ToggleNativeMap() end end)
+    button:SetScript("OnClick", function() if arg1 == "RightButton" then HCM:ToggleNativePinManager() else HCM:ToggleNativeMap() end end)
     button:SetScript("OnDragStart", function() this.dragging = 1 end)
     button:SetScript("OnDragStop", function() this.dragging = nil end)
     button:SetScript("OnUpdate", function()
@@ -544,7 +545,7 @@ function HCM:CreateMinimapButton()
         HCMapperDB.minimapAngle = angle
         HCM:PositionMinimapButton()
     end)
-    button:SetScript("OnEnter", function() GameTooltip:SetOwner(this,"ANCHOR_LEFT"); GameTooltip:AddLine("HC Mapper"); GameTooltip:AddLine("Left-click: standard World Map",1,1,1);GameTooltip:AddLine("Right-click: pin manager",1,1,1); GameTooltip:Show() end)
+    button:SetScript("OnEnter", function() GameTooltip:SetOwner(this,"ANCHOR_LEFT"); GameTooltip:AddLine("HC Mapper"); GameTooltip:AddLine("Left-click: standard World Map",1,1,1);GameTooltip:AddLine("Right-click: World Map with pin list",1,1,1); GameTooltip:Show() end)
     button:SetScript("OnLeave", function() GameTooltip:Hide() end)
     self.MinimapButton = button
     self:PositionMinimapButton()
@@ -559,5 +560,5 @@ function HCM:PositionMinimapButton()
 end
 
 function HCM:InitializeUI()
-    self:CreateEditor(); self:CreateManager(); self:CreateMinimapButton(); self:RefreshManager()
+    self:CreateEditor(); self:CreateMinimapButton()
 end

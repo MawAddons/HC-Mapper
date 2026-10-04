@@ -36,17 +36,20 @@ function SendChatMessage()end;function SendAddonMessage()end;function RegisterAd
 
 dofile("HC-Mapper/Core.lua");assert(HCMapper.ShowPinTooltip,"pin tooltip must be available from Core");dofile("HC-Mapper/MapData.lua");dofile("HC-Mapper/Network.lua");dofile("HC-Mapper/UI.lua");dofile("HC-Mapper/WorldMap.lua");dofile("HC-Mapper/Dungeon.lua")
 local HCM=HCMapper;HCM:InitializeDB();HCM:InitializeNetwork();HCM:InitializeUI();HCM:InitializeWorldMap()
-assert(HCM.Manager and HCM.Editor and HCM.MinimapButton,"main UI did not initialize")
+assert(HCM.Editor and HCM.MinimapButton and not HCM.Manager,"native map UI did not initialize lazily")
 assert(table.getn(HCM.PinIcons)==25 and table.getn(HCM.Editor.iconChoices)==25,"25 pin icons were not exposed in the editor")
-assert(HCM.WorldAdd and HCM.WorldPinsButton and table.getn(HCM.WorldPins)==120,"World Map controls did not initialize")
+assert(HCM.WorldAdd and HCM.WorldPinsButton and HCM.WorldPinPanel and table.getn(HCM.WorldPins)==120,"World Map controls did not initialize")
 assert(WorldMapFrame:GetWidth()==1000 and WorldMapFrame:GetHeight()==700,"HC Mapper resized the standard World Map")
 assert(HCM.WorldAdd.point and HCM.WorldAdd.point[1]=="BOTTOMRIGHT"and HCM.WorldAdd.point[2]==WorldMapButton,"HC Mapper controls overlap the standard top navigation")
-WorldMapFrame:Hide();this=HCM.MinimapButton;arg1="LeftButton";HCM.MinimapButton.scripts.OnClick();assert(WorldMapFrame:IsShown()and not HCM.Manager:IsShown(),"minimap left-click did not open the standard World Map");arg1=nil
+assert(HCM.WorldPinPanel.parent==WorldMapFrame and HCM.WorldPinPanel.point[2]==WorldMapButton,"pin manager is not integrated with the standard World Map")
+WorldMapFrame:Hide();this=HCM.MinimapButton;arg1="LeftButton";HCM.MinimapButton.scripts.OnClick();assert(WorldMapFrame:IsShown()and not HCM.Manager,"minimap left-click did not open the standard World Map");arg1=nil
+this=HCM.MinimapButton;arg1="RightButton";HCM.MinimapButton.scripts.OnClick();assert(WorldMapFrame:IsShown()and HCM.WorldPinPanel:IsShown()and not HCM.Manager,"minimap right-click did not open the integrated pin manager");this=HCM.WorldPinPanel.close;HCM.WorldPinPanel.close.scripts.OnClick();assert(not HCM.WorldPinPanel:IsShown(),"integrated pin manager did not close");arg1=nil
+WorldMapFrame:Hide();SlashCmdList.HCMAPPER("pins");assert(WorldMapFrame:IsShown()and HCM.WorldPinPanel:IsShown(),"/hcm pins did not open the standard map and integrated pin manager");HCM.WorldPinPanel:Hide()
 HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.2,y=.3,instance=""});this=HCM.Editor.close;HCM.Editor.close.scripts.OnClick();assert(not HCM.Editor:IsShown()and not HCM.Editor.pending,"pin editor X did not close and clean up")
 HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.2,y=.3,instance=""});this=HCM.Editor.cancel;HCM.Editor.cancel.scripts.OnClick();assert(not HCM.Editor:IsShown()and not HCM.Editor.pending,"pin editor Cancel did not close and clean up")
 HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.2,y=.3,instance=""});this=HCM.Editor.name;HCM.Editor.name.scripts.OnEscapePressed();assert(not HCM.Editor:IsShown()and not HCM.Editor.pending,"pin editor Escape did not close and clean up")
 HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.4,y=.5,instance=""});HCM.Editor.name:SetText("Road patrol")
-assert(HCM.Editor.strata=="FULLSCREEN_DIALOG"and HCM.Editor:GetFrameLevel()>HCM.Manager:GetFrameLevel()and HCM.Editor.raised,"pin editor was not raised above the map")
+assert(HCM.Editor.strata=="FULLSCREEN_DIALOG"and HCM.Editor.raised,"pin editor was not raised above the map")
 this=HCM.Editor.iconChoices[4];HCM.Editor.iconChoices[4].scripts.OnClick();assert(HCM.Editor.iconIndex==4,"icon palette did not select the bank icon")
 this=HCM.Editor.save;HCM.Editor.save.scripts.OnClick();assert(table.getn(HCM.DB.pins)==1,"editor did not save outdoor pin")
 assert(HCM.DB.pins[1].icon=="bank","selected icon was not saved on the pin")
@@ -54,6 +57,8 @@ HCM:RefreshWorldPins();assert(HCM.WorldPins[1].pin and HCM.WorldPins[1].pin.titl
 HCM:OpenDungeonBrowser("TheDeadmines");assert(HCM.DungeonFrame and HCM.DungeonFrame.map.texture.texture=="Interface\\AddOns\\HC-Mapper\\Media\\Maps\\TheDeadmines","dungeon texture was not selected")
 HCM:OpenPinEditor({continent=0,zone="",x=0,y=0,instance="TheDeadmines",ix=.3,iy=.4});HCM.Editor.name:SetText("Boss corner");this=HCM.Editor.save;HCM.Editor.save.scripts.OnClick()
 HCM:RefreshDungeonPins();assert(HCM.DungeonFrame.pins[1].pin and HCM.DungeonFrame.pins[1].pin.instance=="TheDeadmines","dungeon pin was not drawn")
+HCM.WorldPinPanel:Show();HCM:RefreshWorldPinPanel();assert(HCM.WorldPinPanel.rows[1].pin and HCM.WorldPinPanel.rows[2].pin,"integrated pin list did not show saved pins");HCM.WorldPinPanel:Hide()
+HCM:CreateManager()
 HCM:RefreshManager();assert(HCM.Manager.rows[1].pin,"manager did not list pins")
 HCM.Manager:Show();HCM:SetDashboardMode("Zone");HCM:RefreshManager()
 assert(HCM.Manager.mode=="Zone" and HCM.Manager.mapPins[1].pin,"dashboard zone tab did not render pins")

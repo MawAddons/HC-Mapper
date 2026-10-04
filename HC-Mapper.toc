@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
-## Notes: v0.4.3: non-overlapping World Map control toolbar
+## Notes: v0.5.0: integrated pin manager inside the standard World Map
 ## Author: MawAddons
-## Version: 0.4.3
+## Version: 0.5.0
 ## SavedVariables: HCMapperDB
 
 Core.lua
