@@ -1,7 +1,7 @@
 HCMapper = {}
 
 local HCM = HCMapper
-HCM.VERSION = "0.3.0"
+HCM.VERSION = "0.4.0"
 HCM.PROTOCOL = "HCM1"
 HCM.CHANNEL = "HCMapper"
 HCM.MAX_PINS = 500
@@ -23,6 +23,36 @@ HCM.CategoryColors = {
     Vendor = { 0.20, 1.00, 0.25 }, Profession = { 0.20, 0.65, 1.00 },
     Resource = { 0.45, 0.90, 0.35 }, Travel = { 0.75, 0.30, 1.00 }, Note = { 0.95, 0.85, 0.60 },
 }
+HCM.PinIcons = {
+    {"question","Question Mark","Interface\\Icons\\INV_Misc_QuestionMark"},
+    {"danger","Danger","Interface\\Icons\\Ability_Creature_Cursed_02"},
+    {"information","Information","Interface\\Icons\\INV_Misc_Note_01"},
+    {"bank","Bank","Interface\\Icons\\INV_Misc_Coin_02"},
+    {"crossed-swords","Crossed Swords","Interface\\Icons\\Ability_DualWield"},
+    {"healing-plant","Healing Plant","Interface\\Icons\\INV_Misc_Herb_01"},
+    {"skull","Skull","Interface\\Icons\\Ability_Rogue_FeignDeath"},
+    {"star","Star","Interface\\Icons\\Spell_Holy_SealOfSalvation"},
+    {"chest","Chest","Interface\\Icons\\INV_Chest_Chain_05"},
+    {"bag","Bag","Interface\\Icons\\INV_Misc_Bag_10"},
+    {"vendor","Vendor","Interface\\Icons\\INV_Misc_Coin_05"},
+    {"anvil","Blacksmith Anvil","Interface\\Icons\\Trade_BlackSmithing"},
+    {"mining","Mining","Interface\\Icons\\Trade_Mining"},
+    {"herbalism","Herbalism","Interface\\Icons\\Spell_Nature_NatureTouchGrow"},
+    {"alchemy","Alchemy","Interface\\Icons\\Trade_Alchemy"},
+    {"enchanting","Enchanting","Interface\\Icons\\Trade_Engraving"},
+    {"fishing","Fishing","Interface\\Icons\\Trade_Fishing"},
+    {"campfire","Campfire","Interface\\Icons\\Spell_Fire_CampFire"},
+    {"portal","Portal","Interface\\Icons\\Spell_Arcane_PortalStormWind"},
+    {"flight","Flight Path","Interface\\Icons\\Ability_Mount_Wyvern_01"},
+    {"key","Dungeon Key","Interface\\Icons\\INV_Misc_Key_03"},
+    {"helmet","Raid","Interface\\Icons\\INV_Helmet_06"},
+    {"pvp","PvP Banner","Interface\\Icons\\INV_BannerPVP_02"},
+    {"treasure","Treasure","Interface\\Icons\\INV_Misc_Bag_10_Black"},
+    {"grave","Graveyard","Interface\\Icons\\Spell_Shadow_AnimateDead"},
+}
+HCM.PinIconTextures = {}
+local iconIndex
+for iconIndex = 1, table.getn(HCM.PinIcons) do HCM.PinIconTextures[HCM.PinIcons[iconIndex][1]] = HCM.PinIcons[iconIndex][3] end
 
 local function Trim(value, limit)
     value = tostring(value or "")
@@ -52,6 +82,17 @@ function HCM:IsCategory(value)
     local i
     for i = 1, table.getn(self.Categories) do if self.Categories[i] == value then return 1 end end
     return nil
+end
+
+function HCM:IsPinIcon(value) return value and self.PinIconTextures[value] and 1 or nil end
+function HCM:DefaultPinIcon(category)
+    if category == "Danger" then return "danger" elseif category == "Treasure" then return "treasure"
+    elseif category == "Vendor" then return "vendor" elseif category == "Profession" then return "anvil"
+    elseif category == "Resource" then return "herbalism" elseif category == "Travel" then return "portal" end
+    return "information"
+end
+function HCM:PinTexture(pin)
+    return self.PinIconTextures[pin and pin.icon] or self.CategoryIcons[pin and pin.category] or self.PinIconTextures.information
 end
 
 -- Kept in Core so map pins always have a tooltip, even if a later UI module fails to load.
@@ -96,6 +137,7 @@ function HCM:SanitizePin(pin)
     pin.note = Trim(pin.note, 70)
     pin.scope = pin.scope == "Guild" and "Guild" or (pin.scope == "Private" and "Private" or "Peers")
     pin.category = self:IsCategory(pin.category) and pin.category or "Note"
+    pin.icon = self:IsPinIcon(pin.icon) and pin.icon or self:DefaultPinIcon(pin.category)
     pin.continent = tonumber(pin.continent) or 0
     pin.zone = Trim(pin.zone, 48)
     pin.x = tonumber(pin.x)

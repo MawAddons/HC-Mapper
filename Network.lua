@@ -66,7 +66,7 @@ function HCM:PinMessage(pin)
     local age = math.max(0, math.min(self.PEER_TTL, self:Now() - (pin.updatedAt or self:Now())))
     local fields = { self.PROTOCOL, "P", Escape(pin.id), tostring(pin.revision or 1), Escape(pin.owner), pin.scope,
         tostring(pin.continent or 0), Escape(pin.zone), tostring(pin.x or 0), tostring(pin.y or 0), Escape(pin.instance),
-        tostring(pin.ix or 0), tostring(pin.iy or 0), Escape(pin.category), Escape(pin.title), Escape(pin.note), tostring(age) }
+        tostring(pin.ix or 0), tostring(pin.iy or 0), Escape(pin.category), Escape(pin.title), Escape(pin.note), tostring(age), Escape(pin.icon) }
     local message = table.concat(fields, "~")
     while string.len(message) > self.MAX_MESSAGE and string.len(fields[16]) > 0 do
         fields[16] = string.sub(fields[16], 1, string.len(fields[16]) - 1)
@@ -164,7 +164,7 @@ function HCM:HandleNetwork(message, sender, mode)
         id = id, revision = revision, owner = messageOwner, scope = fields[6], continent = tonumber(fields[7]),
         zone = Unescape(fields[8]), x = tonumber(fields[9]), y = tonumber(fields[10]), instance = Unescape(fields[11]),
         ix = tonumber(fields[12]), iy = tonumber(fields[13]), category = Unescape(fields[14]), title = Unescape(fields[15]),
-        note = Unescape(fields[16]), updatedAt = self:Now() - math.max(0, math.min(self.PEER_TTL, tonumber(fields[17]) or 0)),
+        note = Unescape(fields[16]), updatedAt = self:Now() - math.max(0, math.min(self.PEER_TTL, tonumber(fields[17]) or 0)), icon = Unescape(fields[18]),
     }
     if mode == "GUILD" then pin.scope = "Guild" elseif pin.scope ~= "Peers" then return end
     self:SavePin(pin, nil)

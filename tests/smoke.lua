@@ -54,6 +54,7 @@ end
 
 local mine=HCM:CreatePin({title="Elite patrol",note="Road after dusk",scope="Peers",category="Danger",continent=2,zone="Elwynn",x=.5,y=.5,instance=""})
 assert(mine and mine.owner=="Tester" and table.getn(HCM.DB.pins)==1,"local pin was not created")
+assert(table.getn(HCM.PinIcons)==25 and mine.icon=="danger","25-icon palette or default pin icon is missing")
 assert(table.getn(HCM.Network.queue)==1,"shared pin was not queued")
 local message=HCM:PinMessage(mine)
 assert(message and string.len(message)<=240,"pin message exceeds Vanilla chat limit")
@@ -64,9 +65,10 @@ assert(private and table.getn(HCM.Network.queue)==1,"private pin entered sync qu
 local dungeon=HCM:CreatePin({title="Boss safe spot",scope="Peers",category="Danger",continent=0,zone="",x=0,y=0,instance="TheDeadmines",ix=.3,iy=.7})
 assert(dungeon and dungeon.instance=="TheDeadmines","dungeon pin was rejected")
 
-local remote={id="peer-1",revision=1,owner="Svenne",scope="Peers",continent=2,zone="Westfall",x=.4,y=.6,instance="",ix=0,iy=0,category="Treasure",title="Chest",note="Behind house",updatedAt=HCM:Now()}
+local remote={id="peer-1",revision=1,owner="Svenne",scope="Peers",continent=2,zone="Westfall",x=.4,y=.6,instance="",ix=0,iy=0,category="Treasure",icon="bank",title="Chest",note="Behind house",updatedAt=HCM:Now()}
 HCM:HandleNetwork(HCM:PinMessage(remote),"OtherPlayer","PEER")
 assert(HCM:GetPin("peer-1"),"peer pin was not accepted")
+assert(HCM:GetPin("peer-1").icon=="bank","peer pin icon did not survive network serialization")
 remote.revision=2;remote.note="Moved";HCM:HandleNetwork(HCM:PinMessage(remote),"Svenne","PEER")
 assert(HCM:GetPin("peer-1").note=="Moved","newer peer revision did not replace pin")
 HCM:ApplyDelete("peer-1",3,"Svenne")

@@ -15,7 +15,9 @@ function HCM:CreateMapPin(parent)
     button:SetScript("OnEnter", function() if this.pin then HCM:ShowPinTooltip(this, this.pin) end end)
     button:SetScript("OnLeave", function() GameTooltip:Hide() end)
     button:SetScript("OnClick", function()
-        if this.pin and arg1 == "RightButton" and IsShiftKeyDown() then HCM:RequestDeletePin(this.pin.id) end
+        if this.wasDragged then this.wasDragged=nil;return end
+        if this.pin and arg1 == "RightButton" and IsShiftKeyDown() then HCM:RequestDeletePin(this.pin.id)
+        elseif this.pin and arg1 == "LeftButton" then HCM:GoToPin(this.pin) end
     end)
     button:SetScript("OnDragStart", function() if HCM.BeginPinDrag then HCM:BeginPinDrag(this) end end)
     button:SetScript("OnDragStop", function() if HCM.EndPinDrag then HCM:EndPinDrag(this) end end)
@@ -42,7 +44,7 @@ function HCM:RefreshWorldPins()
     for i = 1, 120 do
         local button, data = self.WorldPins[i], visible[i]
         if data then
-            button.pin = data.pin; button.icon:SetTexture(self.CategoryIcons[data.pin.category] or self.CategoryIcons.Note)
+            button.pin = data.pin; button.icon:SetTexture(self:PinTexture(data.pin))
             local color = self.CategoryColors[data.pin.category] or {1,1,1}; button.ring:SetVertexColor(color[1],color[2],color[3])
             button:ClearAllPoints(); button:SetPoint("CENTER", WorldMapButton, "TOPLEFT", data.x*WorldMapButton:GetWidth(), -data.y*WorldMapButton:GetHeight()); button:Show()
         else button.pin=nil; button:Hide() end

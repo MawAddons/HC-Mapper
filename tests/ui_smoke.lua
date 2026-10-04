@@ -6,7 +6,7 @@ function methods:SetScript(k,v)self.scripts[k]=v end
 function methods:GetScript(k)return self.scripts[k]end
 function methods:RegisterEvent()end;function methods:RegisterForClicks()end;function methods:RegisterForDrag()end
 function methods:SetWidth(v)self.width=v end;function methods:SetHeight(v)self.height=v end;function methods:GetWidth()return self.width end;function methods:GetHeight()return self.height end
-function methods:SetPoint()end;function methods:SetAllPoints()end;function methods:ClearAllPoints()end;function methods:SetFrameStrata()end;function methods:SetFrameLevel(v)self.level=v end;function methods:GetFrameLevel()return self.level or 1 end
+function methods:SetPoint()end;function methods:SetAllPoints()end;function methods:ClearAllPoints()end;function methods:SetFrameStrata(v)self.strata=v end;function methods:SetFrameLevel(v)self.level=v end;function methods:GetFrameLevel()return self.level or 1 end;function methods:Raise()self.raised=true end
 function methods:SetBackdrop()end;function methods:SetBackdropColor()end;function methods:SetTexture(v)self.texture=v end;function methods:SetVertexColor()end;function methods:SetBlendMode()end
 function methods:SetText(v)self.text=v or"" end;function methods:GetText()return self.text end;function methods:SetFontObject()end;function methods:SetTextInsets()end;function methods:SetAutoFocus()end;function methods:SetMultiLine()end;function methods:SetFocus()end;function methods:ClearFocus()end
 function methods:SetJustifyH()end;function methods:SetOwner()end;function methods:AddLine()end;function methods:EnableMouse()end;function methods:SetMovable()end;function methods:SetHighlightTexture()end
@@ -21,22 +21,29 @@ UIParent=CreateFrame("Frame","UIParent");Minimap=CreateFrame("Frame","Minimap",U
 WorldMapFrame=CreateFrame("Frame","WorldMapFrame",UIParent);WorldMapFrame:SetWidth(1000);WorldMapFrame:SetHeight(700)
 WorldMapButton=CreateFrame("Button","WorldMapButton",WorldMapFrame);WorldMapButton:SetWidth(800);WorldMapButton:SetHeight(600)
 DEFAULT_CHAT_FRAME=CreateFrame("Frame","ChatFrame1",UIParent);ChatFontNormal={};SlashCmdList={}
-function GetTime()return 1000 end;function time()return 2000001000 end;function UnitName()return"Tester"end;function GetGuildInfo()return"Guild"end
+function GetTime()return 1000 end;function time()return 2000001000 end;function UnitName(unit)if unit=="party1"then return"Friend"end;return"Tester"end;function GetGuildInfo()return"Guild"end
 local mapContinent,mapZone=2,1
 function GetCurrentMapContinent()return mapContinent end;function GetCurrentMapZone()return mapZone end
 function GetMapInfo()if mapZone>0 then return"Elwynn"elseif mapContinent==1 then return"Kalimdor"elseif mapContinent==2 then return"Azeroth"end end
+function GetMapZones(continent)if continent==2 then return"Elwynn"end;return"Durotar"end
 function SetMapZoom(continent,zone)mapContinent=continent or 0;mapZone=zone or 0 end;function SetMapToCurrentZone()mapContinent=2;mapZone=1 end
 function ProcessMapClick()if mapContinent==0 then mapContinent=2;mapZone=0 elseif mapZone==0 then mapZone=1 end end
 function GetNumMapOverlays()if mapZone>0 then return 1 end;return 0 end;function GetMapOverlayInfo()return"Interface\\WorldMap\\Elwynn\\Elwynn",300,300,100,100,0,0 end
+function GetNumRaidMembers()return 0 end;function GetNumPartyMembers()return 1 end
+function GetPlayerMapPosition(unit)if unit=="player"then return.5,.5 elseif unit=="party1"then return.6,.6 end;return 0,0 end
 function GetCursorPosition()return 500,400 end;function GetChannelName()return 7 end;function JoinChannelByName()end;function getglobal()return nil end
 function SendChatMessage()end;function SendAddonMessage()end;function RegisterAddonMessagePrefix()end;function IsShiftKeyDown()return nil end;function ToggleWorldMap()WorldMapFrame:Show()end
 
 dofile("HC-Mapper/Core.lua");assert(HCMapper.ShowPinTooltip,"pin tooltip must be available from Core");dofile("HC-Mapper/MapData.lua");dofile("HC-Mapper/Network.lua");dofile("HC-Mapper/UI.lua");dofile("HC-Mapper/WorldMap.lua");dofile("HC-Mapper/Dungeon.lua")
 local HCM=HCMapper;HCM:InitializeDB();HCM:InitializeNetwork();HCM:InitializeUI();HCM:InitializeWorldMap()
 assert(HCM.Manager and HCM.Editor and HCM.MinimapButton,"main UI did not initialize")
+assert(table.getn(HCM.PinIcons)==25 and table.getn(HCM.Editor.iconChoices)==25,"25 pin icons were not exposed in the editor")
 assert(HCM.WorldAdd and table.getn(HCM.WorldPins)==120,"World Map controls did not initialize")
 HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.4,y=.5,instance=""});HCM.Editor.name:SetText("Road patrol")
+assert(HCM.Editor.strata=="FULLSCREEN_DIALOG"and HCM.Editor:GetFrameLevel()>HCM.Manager:GetFrameLevel()and HCM.Editor.raised,"pin editor was not raised above the map")
+this=HCM.Editor.iconChoices[4];HCM.Editor.iconChoices[4].scripts.OnClick();assert(HCM.Editor.iconIndex==4,"icon palette did not select the bank icon")
 this=HCM.Editor.save;HCM.Editor.save.scripts.OnClick();assert(table.getn(HCM.DB.pins)==1,"editor did not save outdoor pin")
+assert(HCM.DB.pins[1].icon=="bank","selected icon was not saved on the pin")
 HCM:RefreshWorldPins();assert(HCM.WorldPins[1].pin and HCM.WorldPins[1].pin.title=="Road patrol","outdoor pin was not drawn")
 HCM:OpenDungeonBrowser("TheDeadmines");assert(HCM.DungeonFrame and HCM.DungeonFrame.map.texture.texture=="Interface\\AddOns\\HC-Mapper\\Media\\Maps\\TheDeadmines","dungeon texture was not selected")
 HCM:OpenPinEditor({continent=0,zone="",x=0,y=0,instance="TheDeadmines",ix=.3,iy=.4});HCM.Editor.name:SetText("Boss corner");this=HCM.Editor.save;HCM.Editor.save.scripts.OnClick()
@@ -45,10 +52,13 @@ HCM:RefreshManager();assert(HCM.Manager.rows[1].pin,"manager did not list pins")
 HCM.Manager:Show();HCM:SetDashboardMode("Zone");HCM:RefreshManager()
 assert(HCM.Manager.mode=="Zone" and HCM.Manager.mapPins[1].pin,"dashboard zone tab did not render pins")
 assert(HCM.Manager.explorationCount>0,"discovered map overlays were not rendered")
+HCM:RefreshDashboardUnits();assert(HCM.Manager.unitMarkers[1]:IsShown()and HCM.Manager.unitMarkers[1].unit=="player","player marker was not shown");assert(HCM.Manager.unitMarkers[2]:IsShown()and HCM.Manager.unitMarkers[2].unit=="party1","party marker was not shown")
 HCM:SetDashboardMode("World");assert(HCM.Manager.mode=="World"and mapContinent==0,"World tab did not select the world map")
 this=HCM.Manager.map;arg1="LeftButton";HCM.Manager.map.scripts.OnClick();assert(HCM.Manager.mode=="Continent"and mapContinent==2 and mapZone==0,"world map click did not navigate to a continent")
 HCM.Manager.map.scripts.OnClick();assert(HCM.Manager.mode=="Zone"and mapZone==1 and HCM.Manager.explorationCount>0,"continent click did not navigate to the discovered zone map")
 arg1="RightButton";HCM.Manager.map.scripts.OnClick();assert(HCM.Manager.mode=="Continent"and mapZone==0,"right-click did not navigate back");HCM:SetDashboardMode("Zone");arg1=nil
+local clickable=HCM.Manager.mapPins[1];this=clickable;arg1="LeftButton";clickable.scripts.OnClick();assert(HCM.Manager.mode=="Zone"and mapContinent==2 and mapZone==1,"clicking an outdoor pin did not open its zone map")
+HCM:GoToPin(HCM.DB.pins[2]);assert(HCM.Manager.mode=="Dungeon"and HCM.Manager.dungeonKey=="TheDeadmines","clicking a dungeon pin did not open its dungeon map");HCM:SetDashboardMode("Zone");arg1=nil
 this=HCM.Manager.mapPins[1];HCM.Manager.mapPins[1].scripts.OnEnter();HCM.Manager.mapPins[1].scripts.OnLeave()
 this=HCM.Manager.titlebar;HCM.Manager.titlebar.scripts.OnDragStart();assert(HCM.Manager.moving,"titlebar did not start window drag");HCM.Manager.titlebar.scripts.OnDragStop();assert(not HCM.Manager.moving,"titlebar did not stop window drag")
 this=HCM.Manager.minimize;HCM.Manager.minimize.scripts.OnClick();assert(HCM.Manager.minimized and not HCM.Manager.content:IsShown(),"minimize button did not collapse dashboard");HCM.Manager.minimize.scripts.OnClick();assert(not HCM.Manager.minimized and HCM.Manager.content:IsShown(),"minimize button did not restore dashboard")

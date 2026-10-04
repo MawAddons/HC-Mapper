@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
-## Notes: v0.3.0: native-style map navigation with discovered-area overlays
+## Notes: v0.4.0: pin navigation, 25 icons, and live group map markers
 ## Author: MawAddons
-## Version: 0.3.0
+## Version: 0.4.0
 ## SavedVariables: HCMapperDB
 
 Core.lua
