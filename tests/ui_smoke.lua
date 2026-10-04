@@ -24,9 +24,10 @@ DEFAULT_CHAT_FRAME=CreateFrame("Frame","ChatFrame1",UIParent);ChatFontNormal={};
 function GetTime()return 1000 end;function time()return 2000001000 end;function UnitName(unit)if unit=="party1"then return"Friend"end;return"Tester"end;function GetGuildInfo()return"Guild"end
 local mapContinent,mapZone=2,1
 function GetCurrentMapContinent()return mapContinent end;function GetCurrentMapZone()return mapZone end
-function GetMapInfo()if mapZone>0 then return"Elwynn"elseif mapContinent==1 then return"Kalimdor"elseif mapContinent==2 then return"Azeroth"end end
-function GetMapZones(continent)if continent==2 then return"Elwynn"end;return"Durotar"end
-function SetMapZoom(continent,zone)mapContinent=continent or 0;mapZone=zone or 0 end;function SetMapToCurrentZone()mapContinent=2;mapZone=1 end
+function GetMapInfo()if mapZone==1 then return"Elwynn"elseif mapZone==2 then return"Duskwood"elseif mapZone==3 then return"DeadwindPass"elseif mapContinent==1 then return"Kalimdor"elseif mapContinent==2 then return"Azeroth"end end
+function GetMapZones(continent)if continent==2 then return"Elwynn Forest","Duskwood","Deadwind Pass"end;return"Durotar"end
+local zoomCalls=0
+function SetMapZoom(continent,zone)zoomCalls=zoomCalls+1;mapContinent=continent or 0;mapZone=zone or 0 end;function SetMapToCurrentZone()mapContinent=2;mapZone=1 end
 function ProcessMapClick()if mapContinent==0 then mapContinent=2;mapZone=0 elseif mapZone==0 then mapZone=1 end end
 function GetNumMapOverlays()if mapZone>0 then return 1 end;return 0 end;function GetMapOverlayInfo()return"Interface\\WorldMap\\Elwynn\\Elwynn",300,300,100,100,0,0 end
 function GetNumRaidMembers()return 0 end;function GetNumPartyMembers()return 1 end
@@ -42,6 +43,8 @@ assert(HCM.WorldAdd and HCM.WorldPinsButton and HCM.WorldPinPanel and table.getn
 assert(WorldMapFrame:GetWidth()==1000 and WorldMapFrame:GetHeight()==700,"HC Mapper resized the standard World Map")
 assert(HCM.WorldAdd.point and HCM.WorldAdd.point[1]=="BOTTOMRIGHT"and HCM.WorldAdd.point[2]==WorldMapButton,"HC Mapper controls overlap the standard top navigation")
 assert(HCM.WorldPinPanel.parent==WorldMapFrame and HCM.WorldPinPanel.point[2]==WorldMapButton,"pin manager is not integrated with the standard World Map")
+local beforeContinent,beforeZone,beforeZoomCalls=mapContinent,mapZone,zoomCalls;assert(HCM:FindZoneIndex(2,"Duskwood")==2,"read-only zone lookup did not find Duskwood");assert(mapContinent==beforeContinent and mapZone==beforeZone and zoomCalls==beforeZoomCalls,"zone lookup changed the displayed map")
+mapContinent,mapZone=2,2;this=HCM.WorldAdd;HCM.WorldAdd.scripts.OnClick();assert(HCM.WorldAddMode and mapContinent==2 and mapZone==2,"Add Pin changed Duskwood to another zone");HCM.WorldAdd.scripts.OnClick();mapContinent,mapZone=2,1
 WorldMapFrame:Hide();this=HCM.MinimapButton;arg1="LeftButton";HCM.MinimapButton.scripts.OnClick();assert(WorldMapFrame:IsShown()and not HCM.Manager,"minimap left-click did not open the standard World Map");arg1=nil
 this=HCM.MinimapButton;arg1="RightButton";HCM.MinimapButton.scripts.OnClick();assert(WorldMapFrame:IsShown()and HCM.WorldPinPanel:IsShown()and not HCM.Manager,"minimap right-click did not open the integrated pin manager");this=HCM.WorldPinPanel.close;HCM.WorldPinPanel.close.scripts.OnClick();assert(not HCM.WorldPinPanel:IsShown(),"integrated pin manager did not close");arg1=nil
 WorldMapFrame:Hide();SlashCmdList.HCMAPPER("pins");assert(WorldMapFrame:IsShown()and HCM.WorldPinPanel:IsShown(),"/hcm pins did not open the standard map and integrated pin manager");HCM.WorldPinPanel:Hide()

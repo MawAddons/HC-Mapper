@@ -496,13 +496,21 @@ end
 function HCM:FindZoneIndex(continent, zoneKey)
     self.ZoneIndexCache=self.ZoneIndexCache or{};local cacheKey=tostring(continent)..":"..tostring(zoneKey)
     if self.ZoneIndexCache[cacheKey]then return self.ZoneIndexCache[cacheKey]end
-    if not GetMapZones or not SetMapZoom or not GetMapInfo then return nil end
-    local zones={GetMapZones(continent)};local i;self.ResolvingZone=1
+    if not GetMapZones then return nil end
+    local function ZoneToken(value)return string.lower(string.gsub(tostring(value or""),"[%s%p]",""))end
+    local aliases={
+        aszhara="azshara",barrens="thebarrens",darnassis="darnassus",elwynn="elwynnforest",
+        hilsbrad="hillsbradfoothills",ogrimmar="orgrimmar",stormwind="stormwindcity",
+        alterac="alteracmountains",arathi="arathihighlands",hinterlands="thehinterlands",
+        redridge="redridgemountains",silverpine="silverpineforest",tirisfal="tirisfalglades",
+        stranglethorn="stranglethornvale"
+    }
+    local wanted=ZoneToken(zoneKey);wanted=aliases[wanted]or wanted
+    local zones={GetMapZones(continent)};local i
     for i=1,table.getn(zones)do
-        SetMapZoom(continent,i)
-        if GetMapInfo()==zoneKey then self.ZoneIndexCache[cacheKey]=i;self.ResolvingZone=nil;return i end
+        if ZoneToken(zones[i])==wanted then self.ZoneIndexCache[cacheKey]=i;return i end
     end
-    self.ResolvingZone=nil;return nil
+    return nil
 end
 
 function HCM:GoToPin(pin)

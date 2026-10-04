@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
-## Notes: v0.5.0: integrated pin manager inside the standard World Map
+## Notes: v0.5.1: Add Pin no longer changes the selected map zone
 ## Author: MawAddons
-## Version: 0.5.0
+## Version: 0.5.1
 ## SavedVariables: HCMapperDB
 
 Core.lua
