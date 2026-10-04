@@ -41,6 +41,9 @@ assert(table.getn(HCM.PinIcons)==25 and table.getn(HCM.Editor.iconChoices)==25,"
 assert(HCM.WorldAdd and HCM.WorldPinsButton and table.getn(HCM.WorldPins)==120,"World Map controls did not initialize")
 assert(WorldMapFrame:GetWidth()==1000 and WorldMapFrame:GetHeight()==700,"HC Mapper resized the standard World Map")
 WorldMapFrame:Hide();this=HCM.MinimapButton;arg1="LeftButton";HCM.MinimapButton.scripts.OnClick();assert(WorldMapFrame:IsShown()and not HCM.Manager:IsShown(),"minimap left-click did not open the standard World Map");arg1=nil
+HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.2,y=.3,instance=""});this=HCM.Editor.close;HCM.Editor.close.scripts.OnClick();assert(not HCM.Editor:IsShown()and not HCM.Editor.pending,"pin editor X did not close and clean up")
+HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.2,y=.3,instance=""});this=HCM.Editor.cancel;HCM.Editor.cancel.scripts.OnClick();assert(not HCM.Editor:IsShown()and not HCM.Editor.pending,"pin editor Cancel did not close and clean up")
+HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.2,y=.3,instance=""});this=HCM.Editor.name;HCM.Editor.name.scripts.OnEscapePressed();assert(not HCM.Editor:IsShown()and not HCM.Editor.pending,"pin editor Escape did not close and clean up")
 HCM:OpenPinEditor({continent=2,zone="Elwynn",x=.4,y=.5,instance=""});HCM.Editor.name:SetText("Road patrol")
 assert(HCM.Editor.strata=="FULLSCREEN_DIALOG"and HCM.Editor:GetFrameLevel()>HCM.Manager:GetFrameLevel()and HCM.Editor.raised,"pin editor was not raised above the map")
 this=HCM.Editor.iconChoices[4];HCM.Editor.iconChoices[4].scripts.OnClick();assert(HCM.Editor.iconIndex==4,"icon palette did not select the bank icon")

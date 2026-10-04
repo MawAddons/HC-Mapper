@@ -39,8 +39,8 @@ function HCM:CreateEditor()
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
     frame.title = Text(frame, "Create Map Pin", "GameFontNormalLarge")
     frame.title:SetPoint("TOP", frame, "TOP", 0, -18)
-    frame.close = Button(frame, "X", 26, 24); frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, -11)
-    frame.close:SetScript("OnClick", function() if frame.iconPalette then frame.iconPalette:Hide() end; frame:Hide() end)
+    frame.close=CreateFrame("Button",nil,frame,"UIPanelCloseButton");frame.close:SetWidth(32);frame.close:SetHeight(32);frame.close:SetPoint("TOPRIGHT",frame,"TOPRIGHT",-8,-8)
+    frame.close:SetScript("OnClick",function()HCM:ClosePinEditor()end)
     local nameLabel = Text(frame, "Pin name", "GameFontHighlightSmall"); nameLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", 24, -57)
     frame.name = Edit(frame, 335, 28); frame.name:SetPoint("TOPLEFT", frame, "TOPLEFT", 24, -75)
     local noteLabel = Text(frame, "Note", "GameFontHighlightSmall"); noteLabel:SetPoint("TOPLEFT", frame.name, "BOTTOMLEFT", 0, -8)
@@ -90,9 +90,9 @@ function HCM:CreateEditor()
         elseif frame.iconPalette:IsShown()then frame.iconPalette:Hide()else frame.iconPalette:Show()end
     end)
     frame.RefreshIcon = RefreshEditorIcon
-    frame.coords = Text(frame, "", "GameFontDisableSmall"); frame.coords:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 25, 22)
+    frame.coords = Text(frame, "", "GameFontDisableSmall"); frame.coords:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 25, 55)
     frame.cancel = Button(frame, "Cancel", 100, 27); frame.cancel:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -22, 14)
-    frame.cancel:SetScript("OnClick", function() frame.iconPalette:Hide(); frame:Hide() end)
+    frame.cancel:SetScript("OnClick", function() HCM:ClosePinEditor() end)
     frame.save = Button(frame, "Save Pin", 110, 27); frame.save:SetPoint("RIGHT", frame.cancel, "LEFT", -8, 0)
     frame.save:SetScript("OnClick", function()
         local data = frame.pending
@@ -104,11 +104,24 @@ function HCM:CreateEditor()
         data.icon = HCM.PinIcons[frame.iconIndex][1]
         if data.title == "" then HCM:Print("enter a pin name"); frame.name:SetFocus(); return end
         HCM:CreatePin(data)
-        frame.iconPalette:Hide()
-        frame:Hide()
+        HCM:ClosePinEditor()
     end)
+    frame.name:SetScript("OnEscapePressed",function()HCM:ClosePinEditor()end)
+    frame.note:SetScript("OnEscapePressed",function()HCM:ClosePinEditor()end)
+    frame:SetScript("OnHide",function()
+        frame.iconPalette:Hide();frame.pending=nil
+        HCM.WorldAddMode=nil;if HCM.WorldAdd then HCM.WorldAdd:SetText("Add Pin")end
+        if HCM.Manager then HCM.Manager.addMode=nil;HCM.Manager.newPin:SetText("+ New Pin")end
+    end)
+    if UISpecialFrames then table.insert(UISpecialFrames,"HCMapperEditor")end
     frame:Hide(); self.Editor = frame
     return frame
+end
+
+function HCM:ClosePinEditor()
+    if not self.Editor then return end
+    if self.Editor.iconPalette then self.Editor.iconPalette:Hide()end
+    self.Editor.pending=nil;self.Editor:Hide()
 end
 
 function HCM:OpenPinEditor(data)

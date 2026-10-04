@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
-## Notes: v0.4.1: HC Mapper now opens inside the standard World Map
+## Notes: v0.4.2: reliable X, Cancel, and Escape handling in the pin editor
 ## Author: MawAddons
-## Version: 0.4.1
+## Version: 0.4.2
 ## SavedVariables: HCMapperDB
 
 Core.lua
