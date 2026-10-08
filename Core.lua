@@ -1,7 +1,7 @@
 HCMapper = {}
 
 local HCM = HCMapper
-HCM.VERSION = "0.5.3"
+HCM.VERSION = "0.5.4"
 HCM.PROTOCOL = "HCM1"
 HCM.CHANNEL = "HCMapper"
 HCM.MAX_PINS = 500

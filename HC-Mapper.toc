@@ -1,8 +1,8 @@
 ## Interface: 11200
 ## Title: |cffb8c0ccHC|r |cffa335eeMapper|r
-## Notes: v0.5.3: delete confirmation always appears above the map
+## Notes: v0.5.4: map pins plus lightweight peer update notices
 ## Author: MawAddons
-## Version: 0.5.3
+## Version: 0.5.4
 ## SavedVariables: HCMapperDB
 
 Core.lua
@@ -11,3 +11,4 @@ Network.lua
 UI.lua
 WorldMap.lua
 Dungeon.lua
+MawVersion.lua

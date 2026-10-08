@@ -1,4 +1,6 @@
-# HC Mapper 0.5.3
+# HC Mapper 0.5.4
+
+Version 0.5.4 adds one shared, rate-limited MawAddons peer version check. A newer peer version produces one update notice with `https://github.com/MawAddons/HC-Mapper`.
 
 HC Mapper is a lightweight map pin addon for World of Warcraft 1.12.1. Players can create
 pins on zone maps or included Vanilla dungeon maps and automatically exchange shared pins
